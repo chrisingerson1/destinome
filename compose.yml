@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: destinome-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: destinome
+      POSTGRES_PASSWORD: destinome
+      POSTGRES_DB: destinome
+    ports:
+      - "5432:5432"
+    volumes:
+      - destinome_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  destinome_postgres_data:
