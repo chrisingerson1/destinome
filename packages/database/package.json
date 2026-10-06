@@ -1,6 +1,7 @@
 {
-  "name": "database",
+  "name": "@destinome/database",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -14,6 +15,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed/index.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   },
   "keywords": [],
   "author": "",
