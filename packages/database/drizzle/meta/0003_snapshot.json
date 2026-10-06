@@ -1,0 +1,1525 @@
+{
+  "id": "3e0e4276-fd7a-42e6-a1d4-9e8f309b1efe",
+  "prevId": "c6f3b43d-8e40-4af8-ad2c-1c0b3739b339",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.destination_types": {
+      "name": "destination_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "destination_types_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "destination_types_name_unique": {
+          "name": "destination_types_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        },
+        "destination_types_slug_unique": {
+          "name": "destination_types_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destinations_continents": {
+      "name": "destinations_continents",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "continent_id": {
+          "name": "continent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destinations_continents_destination_id_destinations_id_fk": {
+          "name": "destinations_continents_destination_id_destinations_id_fk",
+          "tableFrom": "destinations_continents",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destinations_continents_continent_id_continents_id_fk": {
+          "name": "destinations_continents_continent_id_continents_id_fk",
+          "tableFrom": "destinations_continents",
+          "tableTo": "continents",
+          "columnsFrom": [
+            "continent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destinations_continents_destination_id_continent_id_pk": {
+          "name": "destinations_continents_destination_id_continent_id_pk",
+          "columns": [
+            "destination_id",
+            "continent_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destinations_destination_types": {
+      "name": "destinations_destination_types",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "destination_type_id": {
+          "name": "destination_type_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destinations_destination_types_destination_id_destinations_id_fk": {
+          "name": "destinations_destination_types_destination_id_destinations_id_fk",
+          "tableFrom": "destinations_destination_types",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destinations_destination_types_destination_type_id_destination_types_id_fk": {
+          "name": "destinations_destination_types_destination_type_id_destination_types_id_fk",
+          "tableFrom": "destinations_destination_types",
+          "tableTo": "destination_types",
+          "columnsFrom": [
+            "destination_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destinations_destination_types_destination_id_destination_type_id_pk": {
+          "name": "destinations_destination_types_destination_id_destination_type_id_pk",
+          "columns": [
+            "destination_id",
+            "destination_type_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destinations_geo_subregions": {
+      "name": "destinations_geo_subregions",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geo_subregion_id": {
+          "name": "geo_subregion_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destinations_geo_subregions_destination_id_destinations_id_fk": {
+          "name": "destinations_geo_subregions_destination_id_destinations_id_fk",
+          "tableFrom": "destinations_geo_subregions",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destinations_geo_subregions_geo_subregion_id_geo_subregions_id_fk": {
+          "name": "destinations_geo_subregions_geo_subregion_id_geo_subregions_id_fk",
+          "tableFrom": "destinations_geo_subregions",
+          "tableTo": "geo_subregions",
+          "columnsFrom": [
+            "geo_subregion_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destinations_geo_subregions_destination_id_geo_subregion_id_pk": {
+          "name": "destinations_geo_subregions_destination_id_geo_subregion_id_pk",
+          "columns": [
+            "destination_id",
+            "geo_subregion_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destinations_known_for": {
+      "name": "destinations_known_for",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "known_for_id": {
+          "name": "known_for_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destinations_known_for_destination_id_destinations_id_fk": {
+          "name": "destinations_known_for_destination_id_destinations_id_fk",
+          "tableFrom": "destinations_known_for",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destinations_known_for_known_for_id_known_for_id_fk": {
+          "name": "destinations_known_for_known_for_id_known_for_id_fk",
+          "tableFrom": "destinations_known_for",
+          "tableTo": "known_for",
+          "columnsFrom": [
+            "known_for_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destinations_known_for_destination_id_known_for_id_pk": {
+          "name": "destinations_known_for_destination_id_known_for_id_pk",
+          "columns": [
+            "destination_id",
+            "known_for_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.known_for": {
+      "name": "known_for",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "known_for_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "known_for_slug_unique": {
+          "name": "known_for_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.places_to_visit": {
+      "name": "places_to_visit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "places_to_visit_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(250)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "places_to_visit_destination_id_destinations_id_fk": {
+          "name": "places_to_visit_destination_id_destinations_id_fk",
+          "tableFrom": "places_to_visit",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "place_to_visit_destination_name_unique": {
+          "name": "place_to_visit_destination_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "destination_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destinations": {
+      "name": "destinations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "destinations_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "country_id": {
+          "name": "country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "administrative_area_id": {
+          "name": "administrative_area_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "climate_classification_id": {
+          "name": "climate_classification_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "elevation": {
+          "name": "elevation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "population": {
+          "name": "population",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "population_year": {
+          "name": "population_year",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "area": {
+          "name": "area",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "annual_tourists": {
+          "name": "annual_tourists",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "annual_tourists_year": {
+          "name": "annual_tourists_year",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_airline_hub": {
+          "name": "is_airline_hub",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ideal_days_min": {
+          "name": "ideal_days_min",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ideal_days_max": {
+          "name": "ideal_days_max",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destinations_country_id_countries_id_fk": {
+          "name": "destinations_country_id_countries_id_fk",
+          "tableFrom": "destinations",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "country_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "destinations_administrative_area_id_administrative_areas_id_fk": {
+          "name": "destinations_administrative_area_id_administrative_areas_id_fk",
+          "tableFrom": "destinations",
+          "tableTo": "administrative_areas",
+          "columnsFrom": [
+            "administrative_area_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "destinations_climate_classification_id_climate_classifications_id_fk": {
+          "name": "destinations_climate_classification_id_climate_classifications_id_fk",
+          "tableFrom": "destinations",
+          "tableTo": "climate_classifications",
+          "columnsFrom": [
+            "climate_classification_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "destinations_source_id_unique": {
+          "name": "destinations_source_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "source_id"
+          ]
+        },
+        "destinations_slug_unique": {
+          "name": "destinations_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.administrative_areas": {
+      "name": "administrative_areas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "administrative_areas_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "country_id": {
+          "name": "country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "administrative_areas_country_id_countries_id_fk": {
+          "name": "administrative_areas_country_id_countries_id_fk",
+          "tableFrom": "administrative_areas",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "country_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "administrative_areas_parent_id_administrative_areas_id_fk": {
+          "name": "administrative_areas_parent_id_administrative_areas_id_fk",
+          "tableFrom": "administrative_areas",
+          "tableTo": "administrative_areas",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "administrative_area_unique_idx": {
+          "name": "administrative_area_unique_idx",
+          "nullsNotDistinct": true,
+          "columns": [
+            "country_id",
+            "parent_id",
+            "level",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.climate_classifications": {
+      "name": "climate_classifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "climate_classifications_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "climate_classifications_code_unique": {
+          "name": "climate_classifications_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.continents": {
+      "name": "continents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "continents_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "continents_name_unique": {
+          "name": "continents_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        },
+        "continents_slug_unique": {
+          "name": "continents_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.countries": {
+      "name": "countries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "countries_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iso2": {
+          "name": "iso2",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iso3": {
+          "name": "iso3",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_sovereign": {
+          "name": "is_sovereign",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sovereign_country_id": {
+          "name": "sovereign_country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "countries_sovereign_country_id_countries_id_fk": {
+          "name": "countries_sovereign_country_id_countries_id_fk",
+          "tableFrom": "countries",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "sovereign_country_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "countries_name_unique": {
+          "name": "countries_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        },
+        "countries_iso2_unique": {
+          "name": "countries_iso2_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "iso2"
+          ]
+        },
+        "countries_iso3_unique": {
+          "name": "countries_iso3_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "iso3"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.countries_continents": {
+      "name": "countries_continents",
+      "schema": "",
+      "columns": {
+        "country_id": {
+          "name": "country_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "continent_id": {
+          "name": "continent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "countries_continents_country_id_countries_id_fk": {
+          "name": "countries_continents_country_id_countries_id_fk",
+          "tableFrom": "countries_continents",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "country_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "countries_continents_continent_id_continents_id_fk": {
+          "name": "countries_continents_continent_id_continents_id_fk",
+          "tableFrom": "countries_continents",
+          "tableTo": "continents",
+          "columnsFrom": [
+            "continent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "countries_continents_country_id_continent_id_pk": {
+          "name": "countries_continents_country_id_continent_id_pk",
+          "columns": [
+            "country_id",
+            "continent_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.geo_subregions": {
+      "name": "geo_subregions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "geo_subregions_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "geo_subregions_name_unique": {
+          "name": "geo_subregions_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        },
+        "geo_subregions_slug_unique": {
+          "name": "geo_subregions_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destination_monthly_metrics": {
+      "name": "destination_monthly_metrics",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "month": {
+          "name": "month",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tourism_index": {
+          "name": "tourism_index",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_high": {
+          "name": "average_high",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_low": {
+          "name": "average_low",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clear_skies_chance": {
+          "name": "clear_skies_chance",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precipitation_days": {
+          "name": "precipitation_days",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rainfall": {
+          "name": "rainfall",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snowfall": {
+          "name": "snowfall",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daylight_hours": {
+          "name": "daylight_hours",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "muggy_days": {
+          "name": "muggy_days",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_wind_speed": {
+          "name": "average_wind_speed",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_water_temperature": {
+          "name": "average_water_temperature",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solar_energy": {
+          "name": "solar_energy",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tourism_score": {
+          "name": "tourism_score",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beach_pool_score": {
+          "name": "beach_pool_score",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destination_monthly_metrics_destination_id_destinations_id_fk": {
+          "name": "destination_monthly_metrics_destination_id_destinations_id_fk",
+          "tableFrom": "destination_monthly_metrics",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destination_monthly_metrics_destination_id_month_pk": {
+          "name": "destination_monthly_metrics_destination_id_month_pk",
+          "columns": [
+            "destination_id",
+            "month"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "monthly_metric_month_range": {
+          "name": "monthly_metric_month_range",
+          "value": "\"destination_monthly_metrics\".\"month\" >= 1 AND \"destination_monthly_metrics\".\"month\" <= 12"
+        },
+        "tourism_index_range": {
+          "name": "tourism_index_range",
+          "value": "\"destination_monthly_metrics\".\"tourism_index\" IS NULL OR (\"destination_monthly_metrics\".\"tourism_index\" >= 0 AND \"destination_monthly_metrics\".\"tourism_index\" <= 10)"
+        },
+        "clear_skies_chance_range": {
+          "name": "clear_skies_chance_range",
+          "value": "\"destination_monthly_metrics\".\"clear_skies_chance\" IS NULL OR (\"destination_monthly_metrics\".\"clear_skies_chance\" >= 0 AND \"destination_monthly_metrics\".\"clear_skies_chance\" <= 100)"
+        },
+        "precipitation_days_range": {
+          "name": "precipitation_days_range",
+          "value": "\"destination_monthly_metrics\".\"precipitation_days\" IS NULL OR (\"destination_monthly_metrics\".\"precipitation_days\" >= 0 AND \"destination_monthly_metrics\".\"precipitation_days\" <= 31)"
+        },
+        "daylight_hours_range": {
+          "name": "daylight_hours_range",
+          "value": "\"destination_monthly_metrics\".\"daylight_hours\" IS NULL OR (\"destination_monthly_metrics\".\"daylight_hours\" >= 0 AND \"destination_monthly_metrics\".\"daylight_hours\" <= 24)"
+        },
+        "muggy_days_range": {
+          "name": "muggy_days_range",
+          "value": "\"destination_monthly_metrics\".\"muggy_days\" IS NULL OR (\"destination_monthly_metrics\".\"muggy_days\" >= 0 AND \"destination_monthly_metrics\".\"muggy_days\" <= 31)"
+        },
+        "tourism_score_range": {
+          "name": "tourism_score_range",
+          "value": "\"destination_monthly_metrics\".\"tourism_score\" IS NULL OR (\"destination_monthly_metrics\".\"tourism_score\" >= 0 AND \"destination_monthly_metrics\".\"tourism_score\" <= 10)"
+        },
+        "beach_pool_score_range": {
+          "name": "beach_pool_score_range",
+          "value": "\"destination_monthly_metrics\".\"beach_pool_score\" IS NULL OR (\"destination_monthly_metrics\".\"beach_pool_score\" >= 0 AND \"destination_monthly_metrics\".\"beach_pool_score\" <= 10)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.destination_tag_scores": {
+      "name": "destination_tag_scores",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "methodology_version": {
+          "name": "methodology_version",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destination_tag_scores_destination_id_destinations_id_fk": {
+          "name": "destination_tag_scores_destination_id_destinations_id_fk",
+          "tableFrom": "destination_tag_scores",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destination_tag_scores_tag_id_tags_id_fk": {
+          "name": "destination_tag_scores_tag_id_tags_id_fk",
+          "tableFrom": "destination_tag_scores",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destination_tag_scores_destination_id_tag_id_pk": {
+          "name": "destination_tag_scores_destination_id_tag_id_pk",
+          "columns": [
+            "destination_id",
+            "tag_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "destination_tag_score_range": {
+          "name": "destination_tag_score_range",
+          "value": "\"destination_tag_scores\".\"score\" >= 0 AND \"destination_tag_scores\".\"score\" <= 10"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.tags": {
+      "name": "tags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "tags_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tags_name_unique": {
+          "name": "tags_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        },
+        "tags_slug_unique": {
+          "name": "tags_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.destination_sources": {
+      "name": "destination_sources",
+      "schema": "",
+      "columns": {
+        "destination_id": {
+          "name": "destination_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "destination_sources_destination_id_destinations_id_fk": {
+          "name": "destination_sources_destination_id_destinations_id_fk",
+          "tableFrom": "destination_sources",
+          "tableTo": "destinations",
+          "columnsFrom": [
+            "destination_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "destination_sources_source_id_sources_id_fk": {
+          "name": "destination_sources_source_id_sources_id_fk",
+          "tableFrom": "destination_sources",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "destination_sources_destination_id_source_id_pk": {
+          "name": "destination_sources_destination_id_source_id_pk",
+          "columns": [
+            "destination_id",
+            "source_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sources": {
+      "name": "sources",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "sources_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(250)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sources_name_unique": {
+          "name": "sources_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

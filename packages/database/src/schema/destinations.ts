@@ -18,6 +18,7 @@ import {
 
 export const destinations = pgTable("destinations", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  sourceId: varchar("source_id", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 200 }).notNull(),
   slug: varchar("slug", { length: 200 }).notNull().unique(),
   countryId: integer("country_id")

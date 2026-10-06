@@ -3,6 +3,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -32,12 +33,21 @@ export const destinationsKnownFor = pgTable(
   ],
 );
 
-export const placesToVisit = pgTable("places_to_visit", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  destinationId: integer("destination_id")
-    .notNull()
-    .references(() => destinations.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 250 }).notNull(),
-  description: text("description"),
-  displayOrder: integer("display_order").notNull().default(0),
-});
+export const placesToVisit = pgTable(
+  "places_to_visit",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    destinationId: integer("destination_id")
+      .notNull()
+      .references(() => destinations.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 250 }).notNull(),
+    description: text("description"),
+    displayOrder: integer("display_order").notNull().default(0),
+  },
+  (table) => [
+    unique("place_to_visit_destination_name_unique").on(
+      table.destinationId,
+      table.name,
+    ),
+  ],
+);

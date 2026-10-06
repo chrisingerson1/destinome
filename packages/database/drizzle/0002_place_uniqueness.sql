@@ -1,0 +1,1 @@
+ALTER TABLE "places_to_visit" ADD CONSTRAINT "place_to_visit_destination_name_unique" UNIQUE("destination_id","name");
