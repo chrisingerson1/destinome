@@ -4,6 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "data:check": "tsx src/scripts/check-data.ts",
+    "data:import:destinations": "tsx src/import/import-destinations.ts",
+    "data:import:monthly-metrics": "tsx src/import/import-monthly-metrics.ts",
+    "data:import:tag-scores": "tsx src/import/import-tag-scores.ts",
+    "data:validate": "tsx src/import/validate-destinations.ts",
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -15,9 +20,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.5",
     "drizzle-orm": "^0.45.3",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "slugify": "^1.6.9",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
