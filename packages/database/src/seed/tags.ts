@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { tags } from "../schema/scoring";
+import { db } from "../db.js";
+import { tags } from "../schema/scoring.js";
 
 const tagData = [
   { name: "Activities", slug: "activities" },

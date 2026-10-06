@@ -6,8 +6,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { destinations } from "./destinations";
-import { continents, geoSubregions } from "./geography";
+import { destinations } from "./destinations.js";
+import { continents, geoSubregions } from "./geography.js";
 
 export const destinationTypes = pgTable("destination_types", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

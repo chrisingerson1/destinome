@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { continents } from "../schema/geography";
+import { db } from "../db.js";
+import { continents } from "../schema/geography.js";
 
 const continentData = [
   { name: "Africa", slug: "africa" },

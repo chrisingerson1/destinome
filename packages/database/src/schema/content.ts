@@ -7,7 +7,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { destinations } from "./destinations";
+import { destinations } from "./destinations.js";
 
 export const knownFor = pgTable("known_for", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

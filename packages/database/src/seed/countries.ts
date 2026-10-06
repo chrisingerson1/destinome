@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "../db";
+import { db } from "../db.js";
 import {
   continents,
   countries,
   countriesContinents,
-} from "../schema/geography";
+} from "../schema/geography.js";
 
 const countryData = [
   {

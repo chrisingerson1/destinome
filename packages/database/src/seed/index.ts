@@ -1,10 +1,10 @@
-import { pool } from "../db";
+import { pool } from "../db.js";
 
-import { seedContinents } from "./continents";
-import { seedCountries } from "./countries";
-import { seedClimateClassifications } from "./climate-classifications";
-import { seedDestinationTypes } from "./destination-types";
-import { seedTags } from "./tags";
+import { seedContinents } from "./continents.js";
+import { seedCountries } from "./countries.js";
+import { seedClimateClassifications } from "./climate-classifications.js";
+import { seedDestinationTypes } from "./destination-types.js";
+import { seedTags } from "./tags.js";
 
 async function seed() {
   await seedContinents();

@@ -14,7 +14,7 @@ import {
   administrativeAreas,
   climateClassifications,
   countries,
-} from "./geography";
+} from "./geography.js";
 
 export const destinations = pgTable("destinations", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

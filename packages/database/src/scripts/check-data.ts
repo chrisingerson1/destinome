@@ -1,14 +1,11 @@
 import { count, countDistinct, isNotNull } from "drizzle-orm";
 
-import { db, pool } from "../db";
+import { db, pool } from "../db.js";
 
-import { destinations } from "../schema/destinations";
-
-import { destinationsContinents } from "../schema/classifications";
-
-import { destinationTagScores } from "../schema/scoring";
-
-import { destinationMonthlyMetrics } from "../schema/monthly";
+import { destinations } from "../schema/destinations.js";
+import { destinationsContinents } from "../schema/classifications.js";
+import { destinationTagScores } from "../schema/scoring.js";
+import { destinationMonthlyMetrics } from "../schema/monthly.js";
 
 async function checkData() {
   const [{ value: destinationCount }] = await db

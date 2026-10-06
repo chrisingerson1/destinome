@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import { and, eq, isNull } from "drizzle-orm";
 import slugify from "slugify";
 
-import { db } from "../db";
+import { db } from "../db.js";
 
 import {
   administrativeAreas,
@@ -13,14 +13,14 @@ import {
   continents,
   countries,
   geoSubregions,
-} from "../schema/geography";
+} from "../schema/geography.js";
 
-import { destinations } from "../schema/destinations";
+import { destinations } from "../schema/destinations.js";
 
 import {
   destinationsContinents,
   destinationsGeoSubregions,
-} from "../schema/classifications";
+} from "../schema/classifications.js";
 
 type CsvRow = {
   source_id: string;

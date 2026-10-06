@@ -3,9 +3,9 @@ import path from "node:path";
 
 import { parse } from "csv-parse/sync";
 
-import { db } from "../db";
-import { destinations } from "../schema/destinations";
-import { destinationMonthlyMetrics } from "../schema/monthly";
+import { db } from "../db.js";
+import { destinations } from "../schema/destinations.js";
+import { destinationMonthlyMetrics } from "../schema/monthly.js";
 
 type CsvRow = Record<string, string>;
 

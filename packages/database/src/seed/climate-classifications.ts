@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { climateClassifications } from "../schema/geography";
+import { db } from "../db.js";
+import { climateClassifications } from "../schema/geography.js";
 
 const climateClassificationData = [
   {

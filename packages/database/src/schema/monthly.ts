@@ -9,7 +9,7 @@ import {
   smallint,
 } from "drizzle-orm/pg-core";
 
-import { destinations } from "./destinations";
+import { destinations } from "./destinations.js";
 
 export const destinationMonthlyMetrics = pgTable(
   "destination_monthly_metrics",

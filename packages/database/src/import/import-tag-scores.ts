@@ -3,9 +3,9 @@ import path from "node:path";
 
 import { parse } from "csv-parse/sync";
 
-import { db } from "../db";
-import { destinations } from "../schema/destinations";
-import { destinationTagScores, tags } from "../schema/scoring";
+import { db } from "../db.js";
+import { destinations } from "../schema/destinations.js";
+import { destinationTagScores, tags } from "../schema/scoring.js";
 
 type CsvRow = Record<string, string>;
 

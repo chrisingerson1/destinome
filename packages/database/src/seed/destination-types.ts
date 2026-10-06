@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { destinationTypes } from "../schema/classifications";
+import { db } from "../db.js";
+import { destinationTypes } from "../schema/classifications.js";
 
 const destinationTypeData = [
   { name: "Adventure", slug: "adventure" },
