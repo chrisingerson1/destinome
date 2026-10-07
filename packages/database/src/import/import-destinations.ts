@@ -88,16 +88,6 @@ function nullableBoolean(value: string) {
   throw new Error(`Invalid boolean: "${value}"`);
 }
 
-function makeSlug(name: string, adminArea1: string | null, country: string) {
-  const parts = [name, adminArea1, country].filter(Boolean);
-
-  return slugify(parts.join(" "), {
-    lower: true,
-    strict: true,
-    trim: true,
-  });
-}
-
 async function importDestinations() {
   const csvPath = path.resolve("data/destinations.csv");
 
@@ -256,14 +246,12 @@ async function importDestinations() {
       /**
        * Destination
        */
-      const slug = makeSlug(row.name, adminArea1Name, row.country);
-
       const [destination] = await tx
         .insert(destinations)
         .values({
           sourceId: row.source_id,
           name: row.name,
-          slug,
+          slug: `source-${row.source_id}`,
           countryId,
           administrativeAreaId: adminArea2Id ?? adminArea1Id,
           climateClassificationId: climateClassificationId ?? null,
@@ -284,7 +272,7 @@ async function importDestinations() {
           target: destinations.sourceId,
           set: {
             name: row.name,
-            slug,
+            slug: `source-${row.source_id}`,
             countryId,
             administrativeAreaId: adminArea2Id ?? adminArea1Id,
             climateClassificationId: climateClassificationId ?? null,

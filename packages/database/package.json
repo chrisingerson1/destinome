@@ -6,6 +6,8 @@
   "main": "index.js",
   "scripts": {
     "data:check": "tsx src/scripts/check-data.ts",
+    "data:generate-slugs": "tsx src/scripts/generate-slugs.ts",
+    "data:import": "npm run data:import:destinations && npm run data:import:tag-scores && npm run data:import:monthly-metrics && npm run data:generate-slugs && npm run data:check",
     "data:import:destinations": "tsx src/import/import-destinations.ts",
     "data:import:monthly-metrics": "tsx src/import/import-monthly-metrics.ts",
     "data:import:tag-scores": "tsx src/import/import-tag-scores.ts",
