@@ -32,7 +32,7 @@ type DestinationQuery = {
   scores?: string;
 };
 
-export async function destinationRoutes(app: FastifyInstance) {
+export async function destinationsListRoutes(app: FastifyInstance) {
   app.get<{ Querystring: DestinationQuery }>(
     "/destinations",
     async (request, reply) => {

@@ -2,7 +2,7 @@ import Fastify from "fastify";
 
 import { db, destinations } from "@destinome/database";
 
-import { destinationRoutes } from "./routes/destinations.js";
+import { routes } from "./routes/index.js";
 
 const app = Fastify({
   logger: true,
@@ -28,7 +28,7 @@ app.get("/db-health", async () => {
   };
 });
 
-await app.register(destinationRoutes);
+await app.register(routes);
 
 async function start() {
   try {
