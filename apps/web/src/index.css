@@ -11,3 +11,35 @@ body {
   margin: 0;
   min-width: 320px;
 }
+
+.destinome-hover {
+  pointer-events: none;
+}
+
+.destinome-hover .maplibregl-popup-content,
+.destinome-preview .maplibregl-popup-content {
+  background: #0f172a;
+  color: white;
+  border: 1px solid #334155;
+  border-radius: 12px;
+}
+
+.destinome-hover .maplibregl-popup-content {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.destinome-preview .maplibregl-popup-content {
+  padding: 18px;
+}
+
+.destinome-preview .maplibregl-popup-close-button {
+  color: white;
+  font-size: 20px;
+  padding: 4px 8px;
+}
+
+.destinome-hover .maplibregl-popup-tip,
+.destinome-preview .maplibregl-popup-tip {
+  border-top-color: #0f172a;
+}

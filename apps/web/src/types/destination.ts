@@ -25,3 +25,12 @@ export type DestinationDetail = {
     description: string | null;
   }[];
 };
+
+export type MapDestination = {
+  id: number;
+  name: string;
+  slug: string;
+  latitude: number;
+  longitude: number;
+  overallScore: number | null;
+};

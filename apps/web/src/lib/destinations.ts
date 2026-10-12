@@ -1,4 +1,4 @@
-import type { DestinationDetail } from "../types";
+import type { DestinationDetail, MapDestination } from "../types";
 
 export async function getDestination(
   slug: string,
@@ -19,3 +19,18 @@ export async function getDestination(
   const result: { data: DestinationDetail } = await response.json();
   return result.data;
 }
+
+export const getMapDestinations = async (
+  signal?: AbortSignal,
+): Promise<MapDestination[]> => {
+  const response = await fetch(`/api/destinations/map`, {
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load map destinations");
+  }
+
+  const result: { data: MapDestination[] } = await response.json();
+  return result.data;
+};
