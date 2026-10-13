@@ -14,17 +14,153 @@ export type InteractivePushpinLayer = CustomLayerInterface & {
   pick: (point: { x: number; y: number }) => PinLocation | null;
 };
 
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
+
 const EARTH_RADIUS = 6_371_008.8;
 
-// Intentionally exaggerated to remain visible from space
-const PIN_HEIGHT = 180_000;
-const HEAD_RADIUS = 45_000;
-const SHAFT_RADIUS = 7_000;
+const PIN_HEIGHT = 75_000;
+const HEAD_RADIUS = 34_000;
+const SHAFT_RADIUS = 4_000;
 
-const CLOSEUP_PIN_BOOST = 2;
+const BASE_HEAD_CENTER_Y = PIN_HEIGHT + HEAD_RADIUS * 0.35;
 
-// Globe positioning
-const getGlobeMatrix = ({ latitude, longitude }: PinLocation) => {
+const CLOSEUP_PIN_BOOST = 3.2;
+
+const HEAD_GROWTH_START = 3;
+const HEAD_GROWTH_END = 10;
+
+const BASE_FAR_SCALE = 0.46;
+const BASE_NEAR_SCALE = 0.56;
+
+// -----------------------------------------------------------------------------
+// Score tiers
+// -----------------------------------------------------------------------------
+
+type PinTier =
+  | "unrated"
+  | "limited"
+  | "worthwhile"
+  | "strong"
+  | "outstanding"
+  | "exceptional"
+  | "elite";
+
+type PinStyle = {
+  color: string;
+  farScale: number;
+  nearScale: number;
+  priority: number;
+};
+
+const PIN_STYLES: Record<PinTier, PinStyle> = {
+  unrated: {
+    color: "#526071",
+    farScale: BASE_FAR_SCALE,
+    nearScale: BASE_NEAR_SCALE,
+    priority: 0,
+  },
+  limited: {
+    color: "#DD6470",
+    farScale: BASE_FAR_SCALE * 1.1,
+    nearScale: BASE_NEAR_SCALE * 1.1,
+    priority: 1,
+  },
+  worthwhile: {
+    color: "#F2A34A",
+    farScale: BASE_FAR_SCALE * 1.2,
+    nearScale: BASE_NEAR_SCALE * 1.2,
+    priority: 2,
+  },
+  strong: {
+    color: "#B6D957",
+    farScale: BASE_FAR_SCALE * 1.5,
+    nearScale: BASE_NEAR_SCALE * 1.5,
+    priority: 3,
+  },
+  outstanding: {
+    color: "#25C6A6",
+    farScale: BASE_FAR_SCALE * 2.0,
+    nearScale: BASE_NEAR_SCALE * 2.0,
+    priority: 4,
+  },
+  exceptional: {
+    color: "#579BFF",
+    farScale: BASE_FAR_SCALE * 2.6,
+    nearScale: BASE_NEAR_SCALE * 2.6,
+    priority: 5,
+  },
+  elite: {
+    color: "#BD78F4",
+    farScale: BASE_FAR_SCALE * 3.2,
+    nearScale: BASE_NEAR_SCALE * 3.2,
+    priority: 6,
+  },
+};
+
+const PIN_TIERS: PinTier[] = [
+  "unrated",
+  "limited",
+  "worthwhile",
+  "strong",
+  "outstanding",
+  "exceptional",
+  "elite",
+];
+
+const getPinTier = (score: number | null): PinTier => {
+  if (score === null) return "unrated";
+  if (score >= 9.5) return "elite";
+  if (score >= 9) return "exceptional";
+  if (score >= 8) return "outstanding";
+  if (score >= 7) return "strong";
+  if (score >= 6) return "worthwhile";
+
+  return "limited";
+};
+
+type PinAppearance = {
+  tier: PinTier;
+  color: THREE.Color;
+  farScale: number;
+  nearScale: number;
+};
+
+const getPinAppearance = (score: number | null): PinAppearance => {
+  const tier = getPinTier(score);
+  const style = PIN_STYLES[tier];
+
+  return {
+    tier,
+    color: new THREE.Color(style.color),
+    farScale: style.farScale,
+    nearScale: style.nearScale,
+  };
+};
+
+const getHeadScale = (appearance: PinAppearance, zoom: number): number => {
+  const progress = THREE.MathUtils.smootherstep(
+    zoom,
+    HEAD_GROWTH_START,
+    HEAD_GROWTH_END,
+  );
+
+  return THREE.MathUtils.lerp(
+    appearance.farScale,
+    appearance.nearScale,
+    progress,
+  );
+};
+
+// -----------------------------------------------------------------------------
+// Geographic transformations
+// -----------------------------------------------------------------------------
+
+const getGlobeMatrix = ({
+  latitude,
+  longitude,
+}: PinLocation): THREE.Matrix4 => {
   const lat = THREE.MathUtils.degToRad(latitude);
   const lng = THREE.MathUtils.degToRad(longitude);
 
@@ -42,7 +178,6 @@ const getGlobeMatrix = ({ latitude, longitude }: PinLocation) => {
     );
 };
 
-// Mercator positioning
 type MercatorPin = {
   x: number;
   y: number;
@@ -70,25 +205,44 @@ const getLocalMercatorMatrix = (
     .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 };
 
+// -----------------------------------------------------------------------------
+// 3D pushpin layer
+// -----------------------------------------------------------------------------
+
 export const createPushpinLayer = (
   pins: PinLocation[],
 ): InteractivePushpinLayer => {
-  const screenPositions: {
-    index: number;
-    x: number;
-    y: number;
-  }[] = [];
-
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
 
   let map: MapLibreMap;
   let renderer: THREE.WebGLRenderer | null = null;
 
-  let previousScale = -1;
-  let previousProjection: boolean | null = null;
+  // Positions of visible heads, used for hover and click.
+  const screenPositions: Array<{
+    index: number;
+    x: number;
+    y: number;
+    radius: number;
+  }> = [];
 
-  // Precalculate Mercator positions
+  const appearances = pins.map((pin) => getPinAppearance(pin.overallScore));
+
+  // Draw lower scores first within each tier where possible.
+  // Higher-score tiers are rendered later.
+  const renderIndices = pins
+    .map((_, index) => index)
+    .sort((a, b) => {
+      const scoreA = pins[a].overallScore ?? -1;
+      const scoreB = pins[b].overallScore ?? -1;
+
+      return scoreA - scoreB || pins[a].id - pins[b].id;
+    });
+
+  // Cache globe transformations.
+  const globeMatrices = pins.map(getGlobeMatrix);
+
+  // Cache Mercator coordinates.
   const mercatorPins: MercatorPin[] = pins.map((pin) => {
     const coordinate = MercatorCoordinate.fromLngLat([
       pin.longitude,
@@ -103,10 +257,15 @@ export const createPushpinLayer = (
     };
   });
 
+  // Floating-origin state.
   let mercatorOrigin: MercatorCoordinate | null = null;
   let originUnitsPerMeter = 1;
+  let mercatorMatrices: THREE.Matrix4[] = [];
 
-  // Pin geometry
+  // ---------------------------------------------------------------------------
+  // Geometry
+  // ---------------------------------------------------------------------------
+
   const shaftGeometry = new THREE.CylinderGeometry(
     SHAFT_RADIUS,
     SHAFT_RADIUS * 0.45,
@@ -116,69 +275,109 @@ export const createPushpinLayer = (
 
   shaftGeometry.translate(0, PIN_HEIGHT / 2, 0);
 
+  const headGeometry = new THREE.SphereGeometry(HEAD_RADIUS, 28, 18);
+
+  headGeometry.translate(0, BASE_HEAD_CENTER_Y, 0);
+
+  // ---------------------------------------------------------------------------
+  // Materials
+  // ---------------------------------------------------------------------------
+
   const shaftMaterial = new THREE.MeshPhongMaterial({
     color: 0xaeb4bd,
-    specular: 0xffffff,
-    shininess: 110,
+    specular: 0xb8c0c8,
+    shininess: 70,
   });
 
-  const headGeometry = new THREE.SphereGeometry(HEAD_RADIUS, 20, 12);
-
-  headGeometry.translate(0, PIN_HEIGHT + HEAD_RADIUS * 0.65, 0);
+  // All seven tiers share exactly the same material.
+  // Per-instance colors determine their appearance.
+  //
+  // We deliberately avoid premium outlines, metallic
+  // shells and glow geometry.
+  //
+  // Transparent rendering with opacity 1 allows us
+  // to control visual priority between tier meshes.
 
   const headMaterial = new THREE.MeshPhongMaterial({
-    color: 0xc91e28,
-    specular: 0xffaaaa,
-    shininess: 110,
+    color: 0xffffff,
+    specular: 0x555555,
+    shininess: 45,
+    transparent: true,
+    opacity: 1,
+    depthTest: false,
+    depthWrite: false,
   });
 
+  // ---------------------------------------------------------------------------
   // Instanced meshes
+  // ---------------------------------------------------------------------------
+
   const shafts = new THREE.InstancedMesh(
     shaftGeometry,
     shaftMaterial,
     pins.length,
   );
 
-  const heads = new THREE.InstancedMesh(
-    headGeometry,
-    headMaterial,
-    pins.length,
-  );
-
   shafts.frustumCulled = false;
-  heads.frustumCulled = false;
+  shafts.count = 0;
+  scene.add(shafts);
 
-  scene.add(shafts, heads);
+  const headMeshes = {} as Record<PinTier, THREE.InstancedMesh>;
 
+  for (const tier of PIN_TIERS) {
+    const mesh = new THREE.InstancedMesh(
+      headGeometry,
+      headMaterial,
+      pins.length,
+    );
+
+    mesh.frustumCulled = false;
+    mesh.count = 0;
+
+    // Higher scores draw later, covering lower scores
+    // wherever their projected heads overlap.
+    mesh.renderOrder = PIN_STYLES[tier].priority + 10;
+
+    headMeshes[tier] = mesh;
+    scene.add(mesh);
+  }
+
+  const allMeshes = [shafts, ...PIN_TIERS.map((tier) => headMeshes[tier])];
+
+  // ---------------------------------------------------------------------------
   // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+  // ---------------------------------------------------------------------------
 
-  const light = new THREE.DirectionalLight(0xffffff, 2);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+
+  const light = new THREE.DirectionalLight(0xffffff, 1.2);
+
   light.position.set(-1, 3, 2);
   scene.add(light);
 
-  // Update instance transformations
-  const updateInstances = (isGlobe: boolean, scale: number) => {
-    const size = new THREE.Vector3(scale, scale, scale);
+  // ---------------------------------------------------------------------------
+  // Reusable temporary objects
+  // ---------------------------------------------------------------------------
 
-    pins.forEach((pin, index) => {
-      const matrix = isGlobe
-        ? getGlobeMatrix(pin)
-        : getLocalMercatorMatrix(
-            mercatorPins[index],
-            mercatorOrigin!,
-            originUnitsPerMeter,
-          );
+  const instanceMatrix = new THREE.Matrix4();
+  const headMatrix = new THREE.Matrix4();
 
-      matrix.scale(size);
+  const headTranslationMatrix = new THREE.Matrix4();
+  const headScaleMatrix = new THREE.Matrix4();
 
-      shafts.setMatrixAt(index, matrix);
-      heads.setMatrixAt(index, matrix);
-    });
+  const scaleVector = new THREE.Vector3();
 
-    shafts.instanceMatrix.needsUpdate = true;
-    heads.instanceMatrix.needsUpdate = true;
-  };
+  const base3D = new THREE.Vector3();
+
+  const projected = new THREE.Vector4();
+  const projectedRadiusX = new THREE.Vector4();
+  const projectedRadiusZ = new THREE.Vector4();
+
+  const headCounts = {} as Record<PinTier, number>;
+
+  // ---------------------------------------------------------------------------
+  // MapLibre custom layer
+  // ---------------------------------------------------------------------------
 
   return {
     id: "destination-3d-pins",
@@ -193,6 +392,7 @@ export const createPushpinLayer = (
         context: gl,
       });
 
+      // Preserve the satellite imagery.
       renderer.autoClear = false;
 
       map.triggerRepaint();
@@ -203,8 +403,9 @@ export const createPushpinLayer = (
 
       const isGlobe = args.defaultProjectionData.projectionTransition > 0;
 
-      // Update the floating origin when necessary
-      let originChanged = false;
+      // -----------------------------------------------------------------------
+      // Floating origin
+      // -----------------------------------------------------------------------
 
       if (!isGlobe) {
         const center = map.getCenter();
@@ -230,11 +431,16 @@ export const createPushpinLayer = (
 
           originUnitsPerMeter = nextOrigin.meterInMercatorCoordinateUnits();
 
-          originChanged = true;
+          mercatorMatrices = mercatorPins.map((pin) =>
+            getLocalMercatorMatrix(pin, mercatorOrigin!, originUnitsPerMeter),
+          );
         }
       }
 
-      // Calculate zoom-based pin scaling
+      // -----------------------------------------------------------------------
+      // Zoom-based scaling
+      // -----------------------------------------------------------------------
+
       const zoom = map.getZoom();
 
       const baseScale = Math.min(1, 2 ** (2.5 - zoom));
@@ -242,30 +448,22 @@ export const createPushpinLayer = (
       const closeupBoost = THREE.MathUtils.lerp(
         1,
         CLOSEUP_PIN_BOOST,
-        THREE.MathUtils.smootherstep(zoom, 2.5, 7),
+        THREE.MathUtils.smootherstep(zoom, 2.5, 9.5),
       );
 
       const scale = baseScale * closeupBoost;
 
-      if (
-        isGlobe !== previousProjection ||
-        scale !== previousScale ||
-        originChanged
-      ) {
-        updateInstances(isGlobe, scale);
+      scaleVector.set(scale, scale, scale);
 
-        previousProjection = isGlobe;
-        previousScale = scale;
-      }
+      // -----------------------------------------------------------------------
+      // Projection matrix
+      // -----------------------------------------------------------------------
 
-      // IMPORTANT:
-      // Start with MapLibre's projection matrix EVERY frame.
-      // Never reuse the previous frame's camera matrix.
+      // Always use the current MapLibre matrix.
       const projection = new THREE.Matrix4().fromArray(
         args.defaultProjectionData.mainMatrix,
       );
 
-      // Convert local meter coordinates into Mercator space.
       if (!isGlobe && mercatorOrigin) {
         const worldFromLocal = new THREE.Matrix4()
           .makeTranslation(mercatorOrigin.x, mercatorOrigin.y, mercatorOrigin.z)
@@ -282,59 +480,184 @@ export const createPushpinLayer = (
 
       camera.projectionMatrix.copy(projection);
 
-      // Render the pins
-      renderer.resetState();
-      renderer.render(scene, camera);
-
-      // Recalculate screen-space positions for hover/click
-      // IMPORTANT: Do not accumulate positions between frames.
-      screenPositions.length = 0;
-
       const clippingPlane = args.defaultProjectionData.clippingPlane;
 
       const width = map.getCanvas().clientWidth;
       const height = map.getCanvas().clientHeight;
 
-      const instanceMatrix = new THREE.Matrix4();
-      const projected = new THREE.Vector4();
-      const base = new THREE.Vector3();
+      // -----------------------------------------------------------------------
+      // Reset instance counts
+      // -----------------------------------------------------------------------
 
-      for (let index = 0; index < pins.length; index++) {
-        heads.getMatrixAt(index, instanceMatrix);
+      screenPositions.length = 0;
 
-        // Exclude pins behind the globe
+      let shaftCount = 0;
+
+      for (const tier of PIN_TIERS) {
+        headCounts[tier] = 0;
+      }
+
+      // -----------------------------------------------------------------------
+      // Render all destinations
+      // -----------------------------------------------------------------------
+
+      for (const index of renderIndices) {
+        const sourceMatrix = isGlobe
+          ? globeMatrices[index]
+          : mercatorMatrices[index];
+
+        if (!sourceMatrix) continue;
+
+        const appearance = appearances[index];
+
+        // Geographic position and global zoom scaling.
+        instanceMatrix.copy(sourceMatrix).scale(scaleVector);
+
+        // Exclude destinations on Earth's far side.
         if (isGlobe) {
-          base.setFromMatrixPosition(instanceMatrix);
+          base3D.setFromMatrixPosition(instanceMatrix);
 
           const visibility =
-            base.x * clippingPlane[0] +
-            base.y * clippingPlane[1] +
-            base.z * clippingPlane[2] +
+            base3D.x * clippingPlane[0] +
+            base3D.y * clippingPlane[1] +
+            base3D.z * clippingPlane[2] +
             clippingPlane[3];
 
           if (visibility < 0) continue;
         }
 
+        // ---------------------------------------------------------------------
+        // Head sizing
+        // ---------------------------------------------------------------------
+
+        const headScale = getHeadScale(appearance, zoom);
+
+        // The head sits on the fixed-length shaft.
+        // Its center moves slightly with its size so
+        // smaller spheres still connect to the shaft.
+        const headCenterY = PIN_HEIGHT + HEAD_RADIUS * headScale * 0.35;
+
+        headTranslationMatrix.makeTranslation(
+          0,
+          headCenterY - BASE_HEAD_CENTER_Y * headScale,
+          0,
+        );
+
+        headScaleMatrix.makeScale(headScale, headScale, headScale);
+
+        headMatrix
+          .copy(instanceMatrix)
+          .multiply(headTranslationMatrix)
+          .multiply(headScaleMatrix);
+
+        // ---------------------------------------------------------------------
+        // Project the head into screen coordinates
+        // ---------------------------------------------------------------------
+
         projected
-          .set(0, PIN_HEIGHT + HEAD_RADIUS * 0.65, 0, 1)
-          .applyMatrix4(instanceMatrix)
+          .set(0, BASE_HEAD_CENTER_Y, 0, 1)
+          .applyMatrix4(headMatrix)
           .applyMatrix4(projection);
 
-        if (projected.w <= 0) continue;
-
-        const x = projected.x / projected.w;
-        const y = projected.y / projected.w;
-
-        if (Math.abs(x) > 1 || Math.abs(y) > 1) {
+        if (projected.w <= 0 || !Number.isFinite(projected.w)) {
           continue;
         }
 
+        const ndcX = projected.x / projected.w;
+        const ndcY = projected.y / projected.w;
+
+        if (
+          !Number.isFinite(ndcX) ||
+          !Number.isFinite(ndcY) ||
+          Math.abs(ndcX) > 1 ||
+          Math.abs(ndcY) > 1
+        ) {
+          continue;
+        }
+
+        const x = ((ndcX + 1) / 2) * width;
+        const y = ((1 - ndcY) / 2) * height;
+
+        // ---------------------------------------------------------------------
+        // Calculate clickable head radius
+        // ---------------------------------------------------------------------
+
+        projectedRadiusX
+          .set(HEAD_RADIUS, BASE_HEAD_CENTER_Y, 0, 1)
+          .applyMatrix4(headMatrix)
+          .applyMatrix4(projection);
+
+        projectedRadiusZ
+          .set(0, BASE_HEAD_CENTER_Y, HEAD_RADIUS, 1)
+          .applyMatrix4(headMatrix)
+          .applyMatrix4(projection);
+
+        let hitRadius = 10;
+
+        if (projectedRadiusX.w > 0 && projectedRadiusZ.w > 0) {
+          const radiusX =
+            ((projectedRadiusX.x / projectedRadiusX.w + 1) / 2) * width;
+
+          const radiusY =
+            ((1 - projectedRadiusX.y / projectedRadiusX.w) / 2) * height;
+
+          const radiusZX =
+            ((projectedRadiusZ.x / projectedRadiusZ.w + 1) / 2) * width;
+
+          const radiusZY =
+            ((1 - projectedRadiusZ.y / projectedRadiusZ.w) / 2) * height;
+
+          const projectedHeadRadius = Math.max(
+            Math.hypot(radiusX - x, radiusY - y),
+            Math.hypot(radiusZX - x, radiusZY - y),
+          );
+
+          if (Number.isFinite(projectedHeadRadius)) {
+            hitRadius = THREE.MathUtils.clamp(projectedHeadRadius + 4, 6, 32);
+          }
+        }
+
+        // ---------------------------------------------------------------------
+        // Assign instances
+        // ---------------------------------------------------------------------
+
+        // Shafts retain their original dimensions.
+        shafts.setMatrixAt(shaftCount++, instanceMatrix);
+
+        const headMesh = headMeshes[appearance.tier];
+        const slot = headCounts[appearance.tier]++;
+
+        headMesh.setMatrixAt(slot, headMatrix);
+        headMesh.setColorAt(slot, appearance.color);
+
         screenPositions.push({
           index,
-          x: ((x + 1) / 2) * width,
-          y: ((1 - y) / 2) * height,
+          x,
+          y,
+          radius: hitRadius,
         });
       }
+
+      // -----------------------------------------------------------------------
+      // Update GPU instance counts
+      // -----------------------------------------------------------------------
+
+      shafts.count = shaftCount;
+
+      for (const tier of PIN_TIERS) {
+        headMeshes[tier].count = headCounts[tier];
+      }
+
+      for (const mesh of allMeshes) {
+        mesh.instanceMatrix.needsUpdate = true;
+
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      }
+
+      renderer.resetState();
+      renderer.render(scene, camera);
     },
 
     onRemove: () => {
@@ -350,9 +673,14 @@ export const createPushpinLayer = (
       renderer = null;
     },
 
+    // -------------------------------------------------------------------------
+    // Hover and click hit-testing
+    // -------------------------------------------------------------------------
+
     pick: ({ x, y }) => {
-      let closestIndex = -1;
-      let closestDistance = 14 * 14;
+      let bestIndex = -1;
+      let bestScore = -Infinity;
+      let bestDistance = Infinity;
 
       for (const position of screenPositions) {
         const dx = position.x - x;
@@ -360,13 +688,27 @@ export const createPushpinLayer = (
 
         const distance = dx * dx + dy * dy;
 
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = position.index;
+        if (distance > position.radius ** 2) {
+          continue;
+        }
+
+        const score = pins[position.index].overallScore ?? -1;
+
+        // When multiple pins occupy the same clickable
+        // area, prefer the higher Overall Score.
+        //
+        // For equal scores, choose the closer head.
+        if (
+          score > bestScore ||
+          (score === bestScore && distance < bestDistance)
+        ) {
+          bestIndex = position.index;
+          bestScore = score;
+          bestDistance = distance;
         }
       }
 
-      return closestIndex === -1 ? null : pins[closestIndex];
+      return bestIndex === -1 ? null : pins[bestIndex];
     },
   };
 };
