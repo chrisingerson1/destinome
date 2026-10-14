@@ -14,6 +14,12 @@ export type MapDestination = {
   longitude: number;
   overallScore: number | null;
   parentDestinationId: number | null;
+  country: string;
+};
+
+export type MapDestinationScores = {
+  id: MapDestination["id"];
+  scores: Record<string, number | null>;
 };
 
 export type DestinationParent = Pick<MapDestination, "id" | "name" | "slug">;

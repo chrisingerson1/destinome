@@ -1,10 +1,11 @@
 import { FastifyInstance } from "fastify";
-import { and, between, eq, isNotNull } from "drizzle-orm";
+import { and, between, eq, isNotNull, sql } from "drizzle-orm";
 import {
+  countries,
   db,
   destinations,
-  tags,
   destinationTagScores,
+  tags,
 } from "@destinome/database";
 
 export const destinationMapRoutes = async (app: FastifyInstance) => {
@@ -18,8 +19,10 @@ export const destinationMapRoutes = async (app: FastifyInstance) => {
         latitude: destinations.latitude,
         longitude: destinations.longitude,
         overallScore: destinationTagScores.score,
+        country: countries.name,
       })
       .from(destinations)
+      .innerJoin(countries, eq(destinations.countryId, countries.id))
       .leftJoin(tags, eq(tags.slug, "overall"))
       .leftJoin(
         destinationTagScores,
@@ -37,5 +40,33 @@ export const destinationMapRoutes = async (app: FastifyInstance) => {
         ),
       );
     return { data };
+  });
+
+  app.get("/destinations/map/scores", async () => {
+    const rows = await db
+      .select({
+        id: destinations.id,
+        scores: sql<Record<string, number | null>>`
+        json_object_agg(
+          ${tags.slug},
+          ${destinationTagScores.score}
+        )
+      `,
+      })
+      .from(destinations)
+      .innerJoin(
+        destinationTagScores,
+        eq(destinationTagScores.destinationId, destinations.id),
+      )
+      .innerJoin(tags, eq(destinationTagScores.tagId, tags.id))
+      .where(
+        and(
+          isNotNull(destinations.latitude),
+          isNotNull(destinations.longitude),
+        ),
+      )
+      .groupBy(destinations.id);
+
+    return { data: rows };
   });
 };

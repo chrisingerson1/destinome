@@ -120,15 +120,13 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
         });
       }
 
-      const weatherSourceDestinationId =
-        destination.parentDestinationId ?? destination.id;
-
       const [
         continentRows,
         subregionRows,
         typeRows,
         scoreRows,
-        monthlyRows,
+        ownMonthlyRows,
+        parentMonthlyRows,
         knownForRows,
         placeRows,
         neighborhoodRows,
@@ -191,16 +189,26 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
           .where(eq(destinationTagScores.destinationId, destination.id))
           .orderBy(asc(tags.name)),
 
+        // Destination's own monthly metrics
         db
           .select()
           .from(destinationMonthlyMetrics)
-          .where(
-            eq(
-              destinationMonthlyMetrics.destinationId,
-              weatherSourceDestinationId,
-            ),
-          )
+          .where(eq(destinationMonthlyMetrics.destinationId, destination.id))
           .orderBy(asc(destinationMonthlyMetrics.month)),
+
+        // Parent's monthly metrics, when applicable
+        destination.parentDestinationId === null
+          ? Promise.resolve([])
+          : db
+              .select()
+              .from(destinationMonthlyMetrics)
+              .where(
+                eq(
+                  destinationMonthlyMetrics.destinationId,
+                  destination.parentDestinationId,
+                ),
+              )
+              .orderBy(asc(destinationMonthlyMetrics.month)),
 
         db
           .select({
@@ -247,6 +255,57 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
             asc(destinations.id),
           ),
       ]);
+
+      const monthlyRows =
+        destination.parentDestinationId === null
+          ? ownMonthlyRows
+          : (() => {
+              const ownByMonth = new Map(
+                ownMonthlyRows.map((row) => [row.month, row]),
+              );
+
+              const weatherByMonth = new Map(
+                parentMonthlyRows.map((row) => [row.month, row]),
+              );
+
+              const months = new Set([
+                ...ownByMonth.keys(),
+                ...weatherByMonth.keys(),
+              ]);
+
+              return [...months]
+                .sort((a, b) => a - b)
+                .map((month) => {
+                  const own = ownByMonth.get(month);
+                  const weather = weatherByMonth.get(month);
+
+                  return {
+                    destinationId: destination.id,
+                    month,
+
+                    // Neighborhood-specific tourism seasonality
+                    tourismIndex: own?.tourismIndex ?? null,
+
+                    // Inherited weather
+                    averageHigh: weather?.averageHigh ?? null,
+                    averageLow: weather?.averageLow ?? null,
+                    clearSkiesChance: weather?.clearSkiesChance ?? null,
+                    precipitationDays: weather?.precipitationDays ?? null,
+                    rainfall: weather?.rainfall ?? null,
+                    snowfall: weather?.snowfall ?? null,
+                    daylightHours: weather?.daylightHours ?? null,
+                    muggyDays: weather?.muggyDays ?? null,
+                    averageWindSpeed: weather?.averageWindSpeed ?? null,
+                    averageWaterTemperature:
+                      weather?.averageWaterTemperature ?? null,
+                    solarEnergy: weather?.solarEnergy ?? null,
+
+                    // Weather-based suitability scores
+                    tourismScore: weather?.tourismScore ?? null,
+                    beachPoolScore: weather?.beachPoolScore ?? null,
+                  };
+                });
+            })();
 
       const adminArea1 =
         destination.currentAdminLevel === 1

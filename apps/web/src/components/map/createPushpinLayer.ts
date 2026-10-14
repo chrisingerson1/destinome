@@ -17,8 +17,18 @@ import type { MapDestination } from "../../types/destination";
 
 export type PinLocation = MapDestination;
 
+export type PinSelection = PinLocation & {
+  activeScore: number | null;
+  scoreCategory: string;
+};
+
 export type InteractivePushpinLayer = CustomLayerInterface & {
-  pick: (point: { x: number; y: number }) => PinLocation | null;
+  pick: (point: { x: number; y: number }) => PinSelection | null;
+
+  setScoreCategory: (
+    category: string,
+    scores: ReadonlyMap<number, number | null>,
+  ) => void;
 };
 
 // -----------------------------------------------------------------------------
@@ -176,18 +186,22 @@ export const createPushpinLayer = (
     radius: number;
   }> = [];
 
-  const appearances = pins.map((pin) => getPinAppearance(pin.overallScore));
+  let activeCategory = "overall";
 
-  // Draw lower scores first within each tier where possible.
-  // Higher-score tiers are rendered later.
-  const renderIndices = pins
-    .map((_, index) => index)
-    .sort((a, b) => {
-      const scoreA = pins[a].overallScore ?? -1;
-      const scoreB = pins[b].overallScore ?? -1;
+  const activeScores = pins.map((pin) => pin.overallScore);
+  const appearances = activeScores.map((score) => getPinAppearance(score));
+  const renderIndices = pins.map((_, index) => index);
+
+  const sortRenderIndices = () => {
+    renderIndices.sort((a, b) => {
+      const scoreA = activeScores[a] ?? -1;
+      const scoreB = activeScores[b] ?? -1;
 
       return scoreA - scoreB || pins[a].id - pins[b].id;
     });
+  };
+
+  sortRenderIndices();
 
   // Cache globe transformations.
   const globeMatrices = pins.map(getGlobeMatrix);
@@ -395,9 +409,7 @@ export const createPushpinLayer = (
       // -----------------------------------------------------------------------
 
       const zoom = map.getZoom();
-
       const now = performance.now();
-
       const shouldShowNeighborhoods = zoom >= NEIGHBORHOOD_MIN_ZOOM;
 
       const deltaTime =
@@ -696,7 +708,7 @@ export const createPushpinLayer = (
           continue;
         }
 
-        const score = pins[position.index].overallScore ?? -1;
+        const score = activeScores[position.index] ?? -1;
 
         // When multiple pins occupy the same clickable
         // area, prefer the higher Overall Score.
@@ -712,7 +724,37 @@ export const createPushpinLayer = (
         }
       }
 
-      return bestIndex === -1 ? null : pins[bestIndex];
+      if (bestIndex === -1) {
+        return null;
+      }
+
+      return {
+        ...pins[bestIndex],
+        activeScore: activeScores[bestIndex],
+        scoreCategory: activeCategory,
+      };
+    },
+    setScoreCategory: (category, scores) => {
+      activeCategory = category;
+
+      for (let index = 0; index < pins.length; index++) {
+        const pin = pins[index];
+
+        const score = scores.has(pin.id)
+          ? (scores.get(pin.id) ?? null)
+          : category === "overall"
+            ? pin.overallScore
+            : null;
+
+        activeScores[index] = score;
+        appearances[index] = getPinAppearance(score);
+      }
+
+      // Update score-dependent instance ordering.
+      sortRenderIndices();
+
+      // Request a new frame without rebuilding the layer.
+      map?.triggerRepaint();
     },
   };
 };

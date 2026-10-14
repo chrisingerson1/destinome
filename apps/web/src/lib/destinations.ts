@@ -2,6 +2,7 @@ import type {
   CountrySummary,
   DestinationDetail,
   MapDestination,
+  MapDestinationScores,
 } from "../types";
 
 export type DestinationSearchResult = {
@@ -43,6 +44,18 @@ export const getMapDestinations = async (
   }
 
   const result: { data: MapDestination[] } = await response.json();
+  return result.data;
+};
+
+export const getMapDestinationScores = async (
+  signal?: AbortSignal,
+): Promise<MapDestinationScores[]> => {
+  const response = await fetch(`/api/destinations/map/scores`, { signal });
+  if (!response.ok) {
+    throw new Error("Unable to load destination scores.");
+  }
+
+  const result: { data: MapDestinationScores[] } = await response.json();
   return result.data;
 };
 
