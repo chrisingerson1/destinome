@@ -45,16 +45,12 @@
         "destination_types_name_unique": {
           "name": "destination_types_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "destination_types_slug_unique": {
           "name": "destination_types_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -91,12 +87,8 @@
           "name": "destinations_continents_destination_id_destinations_id_fk",
           "tableFrom": "destinations_continents",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -104,12 +96,8 @@
           "name": "destinations_continents_continent_id_continents_id_fk",
           "tableFrom": "destinations_continents",
           "tableTo": "continents",
-          "columnsFrom": [
-            "continent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["continent_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -117,10 +105,7 @@
       "compositePrimaryKeys": {
         "destinations_continents_destination_id_continent_id_pk": {
           "name": "destinations_continents_destination_id_continent_id_pk",
-          "columns": [
-            "destination_id",
-            "continent_id"
-          ]
+          "columns": ["destination_id", "continent_id"]
         }
       },
       "uniqueConstraints": {},
@@ -151,12 +136,8 @@
           "name": "destinations_destination_types_destination_id_destinations_id_fk",
           "tableFrom": "destinations_destination_types",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -164,12 +145,8 @@
           "name": "destinations_destination_types_destination_type_id_destination_types_id_fk",
           "tableFrom": "destinations_destination_types",
           "tableTo": "destination_types",
-          "columnsFrom": [
-            "destination_type_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_type_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -177,10 +154,7 @@
       "compositePrimaryKeys": {
         "destinations_destination_types_destination_id_destination_type_id_pk": {
           "name": "destinations_destination_types_destination_id_destination_type_id_pk",
-          "columns": [
-            "destination_id",
-            "destination_type_id"
-          ]
+          "columns": ["destination_id", "destination_type_id"]
         }
       },
       "uniqueConstraints": {},
@@ -211,12 +185,8 @@
           "name": "destinations_geo_subregions_destination_id_destinations_id_fk",
           "tableFrom": "destinations_geo_subregions",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -224,12 +194,8 @@
           "name": "destinations_geo_subregions_geo_subregion_id_geo_subregions_id_fk",
           "tableFrom": "destinations_geo_subregions",
           "tableTo": "geo_subregions",
-          "columnsFrom": [
-            "geo_subregion_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["geo_subregion_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -237,10 +203,7 @@
       "compositePrimaryKeys": {
         "destinations_geo_subregions_destination_id_geo_subregion_id_pk": {
           "name": "destinations_geo_subregions_destination_id_geo_subregion_id_pk",
-          "columns": [
-            "destination_id",
-            "geo_subregion_id"
-          ]
+          "columns": ["destination_id", "geo_subregion_id"]
         }
       },
       "uniqueConstraints": {},
@@ -278,12 +241,8 @@
           "name": "destinations_known_for_destination_id_destinations_id_fk",
           "tableFrom": "destinations_known_for",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -291,12 +250,8 @@
           "name": "destinations_known_for_known_for_id_known_for_id_fk",
           "tableFrom": "destinations_known_for",
           "tableTo": "known_for",
-          "columnsFrom": [
-            "known_for_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["known_for_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -304,10 +259,7 @@
       "compositePrimaryKeys": {
         "destinations_known_for_destination_id_known_for_id_pk": {
           "name": "destinations_known_for_destination_id_known_for_id_pk",
-          "columns": [
-            "destination_id",
-            "known_for_id"
-          ]
+          "columns": ["destination_id", "known_for_id"]
         }
       },
       "uniqueConstraints": {},
@@ -356,9 +308,7 @@
         "known_for_slug_unique": {
           "name": "known_for_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -418,12 +368,8 @@
           "name": "places_to_visit_destination_id_destinations_id_fk",
           "tableFrom": "places_to_visit",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -579,12 +525,8 @@
           "name": "destinations_country_id_countries_id_fk",
           "tableFrom": "destinations",
           "tableTo": "countries",
-          "columnsFrom": [
-            "country_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["country_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -592,12 +534,8 @@
           "name": "destinations_administrative_area_id_administrative_areas_id_fk",
           "tableFrom": "destinations",
           "tableTo": "administrative_areas",
-          "columnsFrom": [
-            "administrative_area_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["administrative_area_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -605,12 +543,8 @@
           "name": "destinations_climate_classification_id_climate_classifications_id_fk",
           "tableFrom": "destinations",
           "tableTo": "climate_classifications",
-          "columnsFrom": [
-            "climate_classification_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["climate_classification_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -620,9 +554,7 @@
         "destinations_slug_unique": {
           "name": "destinations_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -681,12 +613,8 @@
           "name": "administrative_areas_country_id_countries_id_fk",
           "tableFrom": "administrative_areas",
           "tableTo": "countries",
-          "columnsFrom": [
-            "country_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["country_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -694,12 +622,8 @@
           "name": "administrative_areas_parent_id_administrative_areas_id_fk",
           "tableFrom": "administrative_areas",
           "tableTo": "administrative_areas",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -709,12 +633,7 @@
         "administrative_area_unique_idx": {
           "name": "administrative_area_unique_idx",
           "nullsNotDistinct": true,
-          "columns": [
-            "country_id",
-            "parent_id",
-            "level",
-            "name"
-          ]
+          "columns": ["country_id", "parent_id", "level", "name"]
         }
       },
       "policies": {},
@@ -768,9 +687,7 @@
         "climate_classifications_code_unique": {
           "name": "climate_classifications_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -818,16 +735,12 @@
         "continents_name_unique": {
           "name": "continents_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "continents_slug_unique": {
           "name": "continents_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -893,12 +806,8 @@
           "name": "countries_sovereign_country_id_countries_id_fk",
           "tableFrom": "countries",
           "tableTo": "countries",
-          "columnsFrom": [
-            "sovereign_country_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sovereign_country_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -908,23 +817,17 @@
         "countries_name_unique": {
           "name": "countries_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "countries_iso2_unique": {
           "name": "countries_iso2_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "iso2"
-          ]
+          "columns": ["iso2"]
         },
         "countries_iso3_unique": {
           "name": "countries_iso3_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "iso3"
-          ]
+          "columns": ["iso3"]
         }
       },
       "policies": {},
@@ -961,12 +864,8 @@
           "name": "countries_continents_country_id_countries_id_fk",
           "tableFrom": "countries_continents",
           "tableTo": "countries",
-          "columnsFrom": [
-            "country_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["country_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -974,12 +873,8 @@
           "name": "countries_continents_continent_id_continents_id_fk",
           "tableFrom": "countries_continents",
           "tableTo": "continents",
-          "columnsFrom": [
-            "continent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["continent_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -987,10 +882,7 @@
       "compositePrimaryKeys": {
         "countries_continents_country_id_continent_id_pk": {
           "name": "countries_continents_country_id_continent_id_pk",
-          "columns": [
-            "country_id",
-            "continent_id"
-          ]
+          "columns": ["country_id", "continent_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1039,16 +931,12 @@
         "geo_subregions_name_unique": {
           "name": "geo_subregions_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "geo_subregions_slug_unique": {
           "name": "geo_subregions_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -1162,12 +1050,8 @@
           "name": "destination_monthly_metrics_destination_id_destinations_id_fk",
           "tableFrom": "destination_monthly_metrics",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1175,10 +1059,7 @@
       "compositePrimaryKeys": {
         "destination_monthly_metrics_destination_id_month_pk": {
           "name": "destination_monthly_metrics_destination_id_month_pk",
-          "columns": [
-            "destination_id",
-            "month"
-          ]
+          "columns": ["destination_id", "month"]
         }
       },
       "uniqueConstraints": {},
@@ -1237,7 +1118,7 @@
         },
         "score": {
           "name": "score",
-          "type": "numeric(3, 1)",
+          "type": "numeric(4, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -1267,12 +1148,8 @@
           "name": "destination_tag_scores_destination_id_destinations_id_fk",
           "tableFrom": "destination_tag_scores",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1280,12 +1157,8 @@
           "name": "destination_tag_scores_tag_id_tags_id_fk",
           "tableFrom": "destination_tag_scores",
           "tableTo": "tags",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1293,10 +1166,7 @@
       "compositePrimaryKeys": {
         "destination_tag_scores_destination_id_tag_id_pk": {
           "name": "destination_tag_scores_destination_id_tag_id_pk",
-          "columns": [
-            "destination_id",
-            "tag_id"
-          ]
+          "columns": ["destination_id", "tag_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1356,16 +1226,12 @@
         "tags_name_unique": {
           "name": "tags_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "tags_slug_unique": {
           "name": "tags_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -1401,12 +1267,8 @@
           "name": "destination_sources_destination_id_destinations_id_fk",
           "tableFrom": "destination_sources",
           "tableTo": "destinations",
-          "columnsFrom": [
-            "destination_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["destination_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1414,12 +1276,8 @@
           "name": "destination_sources_source_id_sources_id_fk",
           "tableFrom": "destination_sources",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1427,10 +1285,7 @@
       "compositePrimaryKeys": {
         "destination_sources_destination_id_source_id_pk": {
           "name": "destination_sources_destination_id_source_id_pk",
-          "columns": [
-            "destination_id",
-            "source_id"
-          ]
+          "columns": ["destination_id", "source_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1479,9 +1334,7 @@
         "sources_name_unique": {
           "name": "sources_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},

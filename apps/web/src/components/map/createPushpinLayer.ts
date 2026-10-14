@@ -6,6 +6,13 @@ import {
 
 import * as THREE from "three";
 
+import {
+  SCORE_TIERS,
+  SCORE_TIER_ORDER,
+  getScoreTier,
+  type ScoreTier,
+} from "../../config/scoreTiers";
+
 import type { MapDestination } from "../../types/destination";
 
 export type PinLocation = MapDestination;
@@ -35,107 +42,45 @@ const BASE_FAR_SCALE = 0.46;
 const BASE_NEAR_SCALE = 0.56;
 
 // -----------------------------------------------------------------------------
-// Score tiers
+// Neighborhood Configuration
 // -----------------------------------------------------------------------------
 
-type PinTier =
-  | "unrated"
-  | "limited"
-  | "worthwhile"
-  | "strong"
-  | "outstanding"
-  | "exceptional"
-  | "elite";
+const NEIGHBORHOOD_MIN_ZOOM = 11;
 
-type PinStyle = {
-  color: string;
-  farScale: number;
-  nearScale: number;
-  priority: number;
+const NEIGHBORHOOD_ANIMATION_DURATION = 300;
+const NEIGHBORHOOD_STAGGER_INTERVAL = 20;
+const NEIGHBORHOOD_STAGGER_STEPS = 7;
+
+const NEIGHBORHOOD_TOTAL_DURATION =
+  NEIGHBORHOOD_ANIMATION_DURATION +
+  (NEIGHBORHOOD_STAGGER_STEPS - 1) * NEIGHBORHOOD_STAGGER_INTERVAL;
+
+const easeOutBack = (t: number): number => {
+  const c = 1.70158;
+  const x = t - 1;
+
+  return 1 + (c + 1) * x ** 3 + c * x ** 2;
 };
 
-const PIN_STYLES: Record<PinTier, PinStyle> = {
-  unrated: {
-    color: "#526071",
-    farScale: BASE_FAR_SCALE,
-    nearScale: BASE_NEAR_SCALE,
-    priority: 0,
-  },
-  limited: {
-    color: "#DD6470",
-    farScale: BASE_FAR_SCALE * 1.1,
-    nearScale: BASE_NEAR_SCALE * 1.1,
-    priority: 1,
-  },
-  worthwhile: {
-    color: "#F2A34A",
-    farScale: BASE_FAR_SCALE * 1.2,
-    nearScale: BASE_NEAR_SCALE * 1.2,
-    priority: 2,
-  },
-  strong: {
-    color: "#B6D957",
-    farScale: BASE_FAR_SCALE * 1.5,
-    nearScale: BASE_NEAR_SCALE * 1.5,
-    priority: 3,
-  },
-  outstanding: {
-    color: "#25C6A6",
-    farScale: BASE_FAR_SCALE * 2.0,
-    nearScale: BASE_NEAR_SCALE * 2.0,
-    priority: 4,
-  },
-  exceptional: {
-    color: "#579BFF",
-    farScale: BASE_FAR_SCALE * 2.6,
-    nearScale: BASE_NEAR_SCALE * 2.6,
-    priority: 5,
-  },
-  elite: {
-    color: "#BD78F4",
-    farScale: BASE_FAR_SCALE * 3.2,
-    nearScale: BASE_NEAR_SCALE * 3.2,
-    priority: 6,
-  },
-};
-
-const PIN_TIERS: PinTier[] = [
-  "unrated",
-  "limited",
-  "worthwhile",
-  "strong",
-  "outstanding",
-  "exceptional",
-  "elite",
-];
-
-const getPinTier = (score: number | null): PinTier => {
-  if (score === null) return "unrated";
-  if (score >= 9.5) return "elite";
-  if (score >= 9) return "exceptional";
-  if (score >= 8) return "outstanding";
-  if (score >= 7) return "strong";
-  if (score >= 6) return "worthwhile";
-
-  return "limited";
-};
-
+// -----------------------------------------------------------------------------
+// Score tiers
+// -----------------------------------------------------------------------------
 type PinAppearance = {
-  tier: PinTier;
+  tier: ScoreTier;
   color: THREE.Color;
   farScale: number;
   nearScale: number;
 };
 
 const getPinAppearance = (score: number | null): PinAppearance => {
-  const tier = getPinTier(score);
-  const style = PIN_STYLES[tier];
+  const tier = getScoreTier(score);
+  const style = SCORE_TIERS[tier];
 
   return {
     tier,
     color: new THREE.Color(style.color),
-    farScale: style.farScale,
-    nearScale: style.nearScale,
+    farScale: BASE_FAR_SCALE * style.sizeMultiplier,
+    nearScale: BASE_NEAR_SCALE * style.sizeMultiplier,
   };
 };
 
@@ -217,6 +162,11 @@ export const createPushpinLayer = (
 
   let map: MapLibreMap;
   let renderer: THREE.WebGLRenderer | null = null;
+
+  let neighborhoodAnimationTime = 0;
+  let lastAnimationFrameTime: number | null = null;
+
+  const revealScaleVector = new THREE.Vector3();
 
   // Positions of visible heads, used for hover and click.
   const screenPositions: Array<{
@@ -322,9 +272,9 @@ export const createPushpinLayer = (
   shafts.count = 0;
   scene.add(shafts);
 
-  const headMeshes = {} as Record<PinTier, THREE.InstancedMesh>;
+  const headMeshes = {} as Record<ScoreTier, THREE.InstancedMesh>;
 
-  for (const tier of PIN_TIERS) {
+  for (const tier of SCORE_TIER_ORDER) {
     const mesh = new THREE.InstancedMesh(
       headGeometry,
       headMaterial,
@@ -336,13 +286,16 @@ export const createPushpinLayer = (
 
     // Higher scores draw later, covering lower scores
     // wherever their projected heads overlap.
-    mesh.renderOrder = PIN_STYLES[tier].priority + 10;
+    mesh.renderOrder = SCORE_TIER_ORDER.indexOf(tier) + 10;
 
     headMeshes[tier] = mesh;
     scene.add(mesh);
   }
 
-  const allMeshes = [shafts, ...PIN_TIERS.map((tier) => headMeshes[tier])];
+  const allMeshes = [
+    shafts,
+    ...SCORE_TIER_ORDER.map((tier) => headMeshes[tier]),
+  ];
 
   // ---------------------------------------------------------------------------
   // Lighting
@@ -373,7 +326,7 @@ export const createPushpinLayer = (
   const projectedRadiusX = new THREE.Vector4();
   const projectedRadiusZ = new THREE.Vector4();
 
-  const headCounts = {} as Record<PinTier, number>;
+  const headCounts = {} as Record<ScoreTier, number>;
 
   // ---------------------------------------------------------------------------
   // MapLibre custom layer
@@ -443,6 +396,26 @@ export const createPushpinLayer = (
 
       const zoom = map.getZoom();
 
+      const now = performance.now();
+
+      const shouldShowNeighborhoods = zoom >= NEIGHBORHOOD_MIN_ZOOM;
+
+      const deltaTime =
+        lastAnimationFrameTime === null
+          ? 0
+          : Math.min(now - lastAnimationFrameTime, 50);
+
+      lastAnimationFrameTime = now;
+
+      // Move the animation forward when zooming in,
+      // and backward when zooming out.
+      neighborhoodAnimationTime = THREE.MathUtils.clamp(
+        neighborhoodAnimationTime +
+          (shouldShowNeighborhoods ? deltaTime : -deltaTime),
+        0,
+        NEIGHBORHOOD_TOTAL_DURATION,
+      );
+
       const baseScale = Math.min(1, 2 ** (2.5 - zoom));
 
       const closeupBoost = THREE.MathUtils.lerp(
@@ -493,7 +466,7 @@ export const createPushpinLayer = (
 
       let shaftCount = 0;
 
-      for (const tier of PIN_TIERS) {
+      for (const tier of SCORE_TIER_ORDER) {
         headCounts[tier] = 0;
       }
 
@@ -512,6 +485,29 @@ export const createPushpinLayer = (
 
         // Geographic position and global zoom scaling.
         instanceMatrix.copy(sourceMatrix).scale(scaleVector);
+
+        const pin = pins[index];
+
+        if (pin.parentDestinationId !== null) {
+          const delay =
+            (pin.id % NEIGHBORHOOD_STAGGER_STEPS) *
+            NEIGHBORHOOD_STAGGER_INTERVAL;
+
+          const progress = THREE.MathUtils.clamp(
+            (neighborhoodAnimationTime - delay) /
+              NEIGHBORHOOD_ANIMATION_DURATION,
+            0,
+            1,
+          );
+
+          if (progress <= 0) {
+            continue;
+          }
+
+          const revealScale = easeOutBack(progress);
+
+          instanceMatrix.scale(revealScaleVector.setScalar(revealScale));
+        }
 
         // Exclude destinations on Earth's far side.
         if (isGlobe) {
@@ -644,7 +640,7 @@ export const createPushpinLayer = (
 
       shafts.count = shaftCount;
 
-      for (const tier of PIN_TIERS) {
+      for (const tier of SCORE_TIER_ORDER) {
         headMeshes[tier].count = headCounts[tier];
       }
 
@@ -658,6 +654,14 @@ export const createPushpinLayer = (
 
       renderer.resetState();
       renderer.render(scene, camera);
+
+      const isNeighborhoodAnimating = shouldShowNeighborhoods
+        ? neighborhoodAnimationTime < NEIGHBORHOOD_TOTAL_DURATION
+        : neighborhoodAnimationTime > 0;
+
+      if (isNeighborhoodAnimating) {
+        map.triggerRepaint();
+      }
     },
 
     onRemove: () => {

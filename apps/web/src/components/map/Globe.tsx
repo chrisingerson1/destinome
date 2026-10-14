@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import {
@@ -12,19 +12,34 @@ import {
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { getMapDestinations } from "../../lib/destinations";
+import {
+  getMapDestinations,
+  type DestinationSearchResult,
+} from "../../lib/destinations";
+import type { MapDestination } from "../../types/destination";
+
 import {
   createPushpinLayer,
   type InteractivePushpinLayer,
 } from "./createPushpinLayer";
+import { DestinationSearch } from "./DestinationSearch";
+import { ScoreLegend } from "./ScoreLegend";
 
 setWorkerUrl(workerUrl);
 
 const apiKey = import.meta.env.VITE_MAPTILER_KEY;
 
 export const Globe = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+
+  const destinationsBySlug = useRef(new Map<string, MapDestination>());
+
+  const [scoresBySlug, setScoresBySlug] = useState(
+    new Map<string, number | null>(),
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -34,14 +49,15 @@ export const Globe = () => {
     const map = new MapLibreMap({
       container,
       style: `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${apiKey}`,
-      center: [-30, 35],
-      zoom: 1.5,
+      center: [0, 35],
+      zoom: 2,
       minZoom: 0,
       maxZoom: 18,
       canvasContextAttributes: {
         antialias: true,
       },
     });
+    mapRef.current = map;
 
     let pinLayer: InteractivePushpinLayer | null = null;
     let hoverPopup: Popup | null = null;
@@ -100,7 +116,7 @@ export const Globe = () => {
       score.textContent =
         pin.overallScore === null
           ? "Overall score unavailable"
-          : `Overall Score: ${pin.overallScore.toFixed(1)}/10`;
+          : `Overall Score: ${pin.overallScore.toFixed(2)}/10`;
 
       const button = document.createElement("button");
       button.type = "button";
@@ -145,6 +161,19 @@ export const Globe = () => {
         const destinations = await getMapDestinations(controller.signal);
         if (controller.signal.aborted) return;
 
+        destinationsBySlug.current = new Map(
+          destinations.map((destination) => [destination.slug, destination]),
+        );
+
+        setScoresBySlug(
+          new Map(
+            destinations.map((destination) => [
+              destination.slug,
+              destination.overallScore,
+            ]),
+          ),
+        );
+
         console.log(`Loaded ${destinations.length} destinations.`);
         if (destinations.length === 0) return;
 
@@ -168,9 +197,26 @@ export const Globe = () => {
       hoverPopup?.remove();
       previewPopup?.remove();
 
+      mapRef.current = null;
+      destinationsBySlug.current.clear();
+
       map.remove();
     };
   }, [navigate]);
+
+  const handleSearchSelect = (result: DestinationSearchResult) => {
+    const map = mapRef.current;
+    const destination = destinationsBySlug.current.get(result.slug);
+
+    if (!map || !destination) return;
+
+    map.flyTo({
+      center: [destination.longitude, destination.latitude],
+      zoom: 12,
+      speed: 1.2,
+      essential: true,
+    });
+  };
 
   if (!apiKey) {
     return (
@@ -180,5 +226,14 @@ export const Globe = () => {
     );
   }
 
-  return <div ref={containerRef} className="h-dvh w-full bg-black" />;
+  return (
+    <div className="relative h-screen w-full">
+      <div ref={containerRef} className="h-dvh w-full bg-black" />
+      <DestinationSearch
+        onSelect={handleSearchSelect}
+        scoresBySlug={scoresBySlug}
+      />
+      <ScoreLegend />
+    </div>
+  );
 };

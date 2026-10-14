@@ -103,7 +103,7 @@ export const destinationMonthlyMetrics = pgTable(
     ),
     check(
       "clear_skies_chance_range",
-      sql`${table.clearSkiesChance} IS NULL OR (${table.clearSkiesChance} >= 0 AND ${table.clearSkiesChance} <= 1å)`,
+      sql`${table.clearSkiesChance} IS NULL OR (${table.clearSkiesChance} >= 0 AND ${table.clearSkiesChance} <= 1)`,
     ),
     check(
       "precipitation_days_range",

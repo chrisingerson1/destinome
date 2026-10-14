@@ -20,6 +20,8 @@ export const countries = pgTable("countries", {
   name: varchar("name", { length: 150 }).notNull().unique(),
   iso2: varchar("iso2", { length: 2 }).notNull().unique(),
   iso3: varchar("iso3", { length: 3 }).notNull().unique(),
+  adminLevel1Label: varchar("admin_level_1_label", { length: 150 }),
+  adminLevel2Label: varchar("admin_level_2_label", { length: 150 }),
   isSovereign: boolean("is_sovereign").notNull().default(true),
   sovereignCountryId: integer("sovereign_country_id").references(
     (): AnyPgColumn => countries.id,

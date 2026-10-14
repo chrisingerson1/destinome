@@ -49,7 +49,7 @@ export const DestinationHero = ({ destination }: DestinationHeroProps) => {
             <div className="flex items-baseline gap-2 md:flex-col md:items-end md:gap-0">
               <div>
                 <span className="text-5xl font-semibold text-white">
-                  {overallScore.score.toFixed(1)}
+                  {overallScore.score.toFixed(2)}
                 </span>
                 <span className="ml-1 text-lg text-slate-400">/10</span>
               </div>

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { StatusCodes } from "http-status-codes";
@@ -29,6 +29,7 @@ type DestinationParams = {
   slug: string;
 };
 
+const parentDestination = alias(destinations, "parent_destination");
 const adminArea = alias(administrativeAreas, "detail_admin_area");
 const parentAdminArea = alias(administrativeAreas, "detail_parent_admin_area");
 
@@ -44,6 +45,13 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
           sourceId: destinations.sourceId,
           name: destinations.name,
           slug: destinations.slug,
+
+          parentDestinationId: destinations.parentDestinationId,
+          parentDestination: {
+            id: parentDestination.id,
+            name: parentDestination.name,
+            slug: parentDestination.slug,
+          },
 
           latitude: destinations.latitude,
           longitude: destinations.longitude,
@@ -82,13 +90,26 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
         .from(destinations)
         .innerJoin(countries, eq(destinations.countryId, countries.id))
         .leftJoin(
+          parentDestination,
+          eq(destinations.parentDestinationId, parentDestination.id),
+        )
+        .leftJoin(
           adminArea,
           eq(destinations.administrativeAreaId, adminArea.id),
         )
         .leftJoin(parentAdminArea, eq(adminArea.parentId, parentAdminArea.id))
         .leftJoin(
           climateClassifications,
-          eq(destinations.climateClassificationId, climateClassifications.id),
+          eq(
+            climateClassifications.id,
+            sql<number | null>`
+              CASE
+                WHEN ${destinations.parentDestinationId} IS NOT NULL
+                  THEN ${parentDestination.climateClassificationId}
+                ELSE ${destinations.climateClassificationId}
+              END
+            `,
+          ),
         )
         .where(eq(destinations.slug, slug))
         .limit(1);
@@ -99,6 +120,9 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
         });
       }
 
+      const weatherSourceDestinationId =
+        destination.parentDestinationId ?? destination.id;
+
       const [
         continentRows,
         subregionRows,
@@ -107,6 +131,7 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
         monthlyRows,
         knownForRows,
         placeRows,
+        neighborhoodRows,
       ] = await Promise.all([
         db
           .select({
@@ -169,7 +194,12 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
         db
           .select()
           .from(destinationMonthlyMetrics)
-          .where(eq(destinationMonthlyMetrics.destinationId, destination.id))
+          .where(
+            eq(
+              destinationMonthlyMetrics.destinationId,
+              weatherSourceDestinationId,
+            ),
+          )
           .orderBy(asc(destinationMonthlyMetrics.month)),
 
         db
@@ -193,6 +223,29 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
           .from(placesToVisit)
           .where(eq(placesToVisit.destinationId, destination.id))
           .orderBy(asc(placesToVisit.displayOrder)),
+
+        db
+          .select({
+            id: destinations.id,
+            name: destinations.name,
+            slug: destinations.slug,
+            overallScore: destinationTagScores.score,
+          })
+          .from(destinations)
+          .leftJoin(tags, eq(tags.slug, "overall"))
+          .leftJoin(
+            destinationTagScores,
+            and(
+              eq(destinationTagScores.destinationId, destinations.id),
+              eq(destinationTagScores.tagId, tags.id),
+            ),
+          )
+          .where(eq(destinations.parentDestinationId, destination.id))
+          .orderBy(
+            sql`${destinationTagScores.score} DESC NULLS LAST`,
+            sql`${destinations.name} COLLATE "und-x-icu" ASC`,
+            asc(destinations.id),
+          ),
       ]);
 
       const adminArea1 =
@@ -211,6 +264,10 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
           sourceId: destination.sourceId,
           name: destination.name,
           slug: destination.slug,
+
+          parentDestinationId: destination.parentDestinationId,
+          parentDestination: destination.parentDestination,
+          neighborhoods: neighborhoodRows,
 
           country: destination.country,
 
@@ -245,7 +302,7 @@ export async function destinationDetailsRoutes(app: FastifyInstance) {
 
           continents: continentRows,
           geoSubregions: subregionRows,
-          types: typeRows,
+          destinationTypes: typeRows,
           scores: scoreRows,
           monthlyMetrics: monthlyRows,
           knownFor: knownForRows,

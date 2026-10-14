@@ -14,6 +14,7 @@ export const destinationMapRoutes = async (app: FastifyInstance) => {
         id: destinations.id,
         name: destinations.name,
         slug: destinations.slug,
+        parentDestinationId: destinations.parentDestinationId,
         latitude: destinations.latitude,
         longitude: destinations.longitude,
         overallScore: destinationTagScores.score,

@@ -24,6 +24,7 @@ import {
 
 type CsvRow = {
   source_id: string;
+  parent_source_id: string;
   name: string;
   country: string;
   admin_area_1: string;
@@ -48,13 +49,13 @@ type CsvRow = {
   ideal_days_max: string;
 };
 
-function nullableString(value: string) {
+const nullableString = (value: string): string | null => {
   const trimmed = value?.trim();
 
   return trimmed ? trimmed : null;
-}
+};
 
-function nullableNumber(value: string) {
+const nullableNumber = (value: string): number | null => {
   const trimmed = value?.trim().replaceAll(",", "");
 
   if (!trimmed) {
@@ -68,9 +69,9 @@ function nullableNumber(value: string) {
   }
 
   return result;
-}
+};
 
-function nullableBoolean(value: string) {
+const nullableBoolean = (value: string): boolean | null => {
   const normalized = value?.trim().toLowerCase();
 
   if (!normalized) {
@@ -86,9 +87,88 @@ function nullableBoolean(value: string) {
   }
 
   throw new Error(`Invalid boolean: "${value}"`);
-}
+};
 
-async function importDestinations() {
+// -----------------------------------------------------------------------------
+// Validate destination relationships before writing anything to the database.
+// -----------------------------------------------------------------------------
+
+const validateParentDestinations = (rows: CsvRow[]): void => {
+  const sourceRows = new Map<string, { row: CsvRow; line: number }>();
+
+  // Ensure source IDs are present and unique.
+  for (const [index, row] of rows.entries()) {
+    const line = index + 2;
+    const sourceId = nullableString(row.source_id);
+
+    if (!sourceId) {
+      throw new Error(`Row ${line}: Missing source_id`);
+    }
+
+    const existing = sourceRows.get(sourceId);
+
+    if (existing) {
+      throw new Error(
+        `Row ${line}: Duplicate source_id "${sourceId}" ` +
+          `(first seen on row ${existing.line})`,
+      );
+    }
+
+    sourceRows.set(sourceId, { row, line });
+  }
+
+  // Validate each declared parent.
+  for (const [index, row] of rows.entries()) {
+    const line = index + 2;
+    const sourceId = row.source_id.trim();
+    const parentSourceId = nullableString(row.parent_source_id);
+
+    if (!parentSourceId) {
+      continue;
+    }
+
+    // No destination may be its own parent.
+    if (parentSourceId === sourceId) {
+      throw new Error(
+        `Row ${line}: Destination "${row.name}" cannot be its own parent`,
+      );
+    }
+
+    const parent = sourceRows.get(parentSourceId);
+
+    // Every referenced parent must exist in this import.
+    if (!parent) {
+      throw new Error(
+        `Row ${line}: Parent source_id "${parentSourceId}" ` +
+          `for "${row.name}" was not found in the CSV`,
+      );
+    }
+
+    // Neighborhood and parent must belong to the same country.
+    if (parent.row.country !== row.country) {
+      throw new Error(
+        `Row ${line}: "${row.name}" and its parent ` +
+          `"${parent.row.name}" belong to different countries`,
+      );
+    }
+
+    // Enforce a single level of parent-child relationships.
+    // This also prevents circular references.
+    if (nullableString(parent.row.parent_source_id)) {
+      throw new Error(
+        `Row ${line}: "${row.name}" references ` +
+          `"${parent.row.name}", which already has a parent. ` +
+          `Nested parent relationships are not supported.`,
+      );
+    }
+  }
+};
+
+// -----------------------------------------------------------------------------
+// Import
+// -----------------------------------------------------------------------------
+
+const importDestinations = async () => {
   const csvPath = path.resolve("data/destinations.csv");
 
   const rows = parse(fs.readFileSync(csvPath, "utf8"), {
@@ -97,12 +177,24 @@ async function importDestinations() {
     trim: true,
   }) as CsvRow[];
 
+  if (rows.length === 0) {
+    throw new Error("Destination CSV contains no rows");
+  }
+
+  if (!("parent_source_id" in rows[0])) {
+    throw new Error('Destination CSV is missing the "parent_source_id" column');
+  }
+
+  // Validate before opening the database transaction.
+  validateParentDestinations(rows);
+
   console.log(`Importing ${rows.length} destinations...`);
 
   await db.transaction(async (tx) => {
-    /**
-     * Reference tables
-     */
+    // -------------------------------------------------------------------------
+    // Reference tables
+    // -------------------------------------------------------------------------
+
     const countryRows = await tx
       .select({
         id: countries.id,
@@ -136,11 +228,16 @@ async function importDestinations() {
       climateRows.map((climate) => [climate.code, climate.id]),
     );
 
-    /**
-     * Process destinations
-     */
+    // Remember the database ID assigned to each source ID.
+    const destinationIdBySourceId = new Map<string, number>();
+
+    // -------------------------------------------------------------------------
+    // Pass 1: Import or update every destination
+    // -------------------------------------------------------------------------
+
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
+      const sourceId = row.source_id.trim();
 
       const countryId = countryIdByName.get(row.country);
 
@@ -154,9 +251,10 @@ async function importDestinations() {
       let adminArea1Id: number | null = null;
       let adminArea2Id: number | null = null;
 
-      /**
-       * Admin area level 1
-       */
+      // -----------------------------------------------------------------------
+      // Admin area level 1
+      // -----------------------------------------------------------------------
+
       if (adminArea1Name) {
         await tx
           .insert(administrativeAreas)
@@ -189,9 +287,10 @@ async function importDestinations() {
         adminArea1Id = adminArea1.id;
       }
 
-      /**
-       * Admin area level 2
-       */
+      // -----------------------------------------------------------------------
+      // Admin area level 2
+      // -----------------------------------------------------------------------
+
       if (adminArea2Name) {
         await tx
           .insert(administrativeAreas)
@@ -223,15 +322,18 @@ async function importDestinations() {
           .where(and(...conditions));
 
         if (!adminArea2) {
-          throw new Error(`Could not resolve admin area "${adminArea2Name}"`);
+          throw new Error(
+            `Could not resolve geo-subregion "${adminArea2Name}"`,
+          );
         }
 
         adminArea2Id = adminArea2.id;
       }
 
-      /**
-       * Climate
-       */
+      // -----------------------------------------------------------------------
+      // Climate
+      // -----------------------------------------------------------------------
+
       const climateCode = nullableString(row.climate_code);
 
       const climateClassificationId =
@@ -243,61 +345,53 @@ async function importDestinations() {
         );
       }
 
-      /**
-       * Destination
-       */
+      // -----------------------------------------------------------------------
+      // Destination
+      // -----------------------------------------------------------------------
+
+      const destinationValues = {
+        sourceId,
+        name: row.name,
+        slug: `source-${sourceId}`,
+        countryId,
+        administrativeAreaId: adminArea2Id ?? adminArea1Id,
+        parentDestinationId: null,
+        climateClassificationId: climateClassificationId ?? null,
+        latitude: nullableNumber(row.latitude),
+        longitude: nullableNumber(row.longitude),
+        timezone: nullableString(row.timezone),
+        elevation: nullableNumber(row.elevation_m),
+        population: nullableNumber(row.population),
+        populationYear: nullableNumber(row.population_year),
+        area: nullableNumber(row.area_sq_km),
+        annualTourists: nullableNumber(row.annual_tourists),
+        annualTouristsYear: nullableNumber(row.annual_tourists_year),
+        isAirlineHub: nullableBoolean(row.airline_hub) ?? false,
+        idealDaysMin: nullableNumber(row.ideal_days_min),
+        idealDaysMax: nullableNumber(row.ideal_days_max),
+      };
+
       const [destination] = await tx
         .insert(destinations)
-        .values({
-          sourceId: row.source_id,
-          name: row.name,
-          slug: `source-${row.source_id}`,
-          countryId,
-          administrativeAreaId: adminArea2Id ?? adminArea1Id,
-          climateClassificationId: climateClassificationId ?? null,
-          latitude: nullableNumber(row.latitude),
-          longitude: nullableNumber(row.longitude),
-          timezone: nullableString(row.timezone),
-          elevation: nullableNumber(row.elevation_m),
-          population: nullableNumber(row.population),
-          populationYear: nullableNumber(row.population_year),
-          area: nullableNumber(row.area_sq_km),
-          annualTourists: nullableNumber(row.annual_tourists),
-          annualTouristsYear: nullableNumber(row.annual_tourists_year),
-          isAirlineHub: nullableBoolean(row.airline_hub) ?? false,
-          idealDaysMin: nullableNumber(row.ideal_days_min),
-          idealDaysMax: nullableNumber(row.ideal_days_max),
-        })
+        .values(destinationValues)
         .onConflictDoUpdate({
           target: destinations.sourceId,
-          set: {
-            name: row.name,
-            slug: `source-${row.source_id}`,
-            countryId,
-            administrativeAreaId: adminArea2Id ?? adminArea1Id,
-            climateClassificationId: climateClassificationId ?? null,
-            latitude: nullableNumber(row.latitude),
-            longitude: nullableNumber(row.longitude),
-            timezone: nullableString(row.timezone),
-            elevation: nullableNumber(row.elevation_m),
-            population: nullableNumber(row.population),
-            populationYear: nullableNumber(row.population_year),
-            area: nullableNumber(row.area_sq_km),
-            annualTourists: nullableNumber(row.annual_tourists),
-            annualTouristsYear: nullableNumber(row.annual_tourists_year),
-            isAirlineHub: nullableBoolean(row.airline_hub) ?? false,
-            idealDaysMin: nullableNumber(row.ideal_days_min),
-            idealDaysMax: nullableNumber(row.ideal_days_max),
-          },
+          set: destinationValues,
         })
         .returning({
           id: destinations.id,
         });
 
-      //
-      /**
-       * Continents
-       */
+      if (!destination) {
+        throw new Error(`Row ${index + 2}: Failed to import "${row.name}"`);
+      }
+
+      destinationIdBySourceId.set(sourceId, destination.id);
+
+      // -----------------------------------------------------------------------
+      // Continents
+      // -----------------------------------------------------------------------
+
       const destinationContinents = [
         nullableString(row.continent_1),
         nullableString(row.continent_2),
@@ -325,9 +419,10 @@ async function importDestinations() {
         });
       }
 
-      /**
-       * Geo-subregions
-       */
+      // -----------------------------------------------------------------------
+      // Geo-subregions
+      // -----------------------------------------------------------------------
+
       const subregionNames = [
         nullableString(row.geo_subregion_1),
         nullableString(row.geo_subregion_2),
@@ -376,10 +471,50 @@ async function importDestinations() {
         console.log(`Imported ${index + 1}/${rows.length}`);
       }
     }
+
+    // -------------------------------------------------------------------------
+    // Pass 2: Link neighborhoods to their parents
+    // -------------------------------------------------------------------------
+
+    console.log("Linking parent destinations...");
+
+    let linkedCount = 0;
+
+    for (const row of rows) {
+      const sourceId = row.source_id.trim();
+      const parentSourceId = nullableString(row.parent_source_id);
+
+      if (!parentSourceId) {
+        // Already cleared to null during the first pass.
+        continue;
+      }
+
+      const destinationId = destinationIdBySourceId.get(sourceId);
+
+      const parentDestinationId = destinationIdBySourceId.get(parentSourceId);
+
+      if (destinationId === undefined || parentDestinationId === undefined) {
+        throw new Error(
+          `Unable to resolve parent relationship: ` +
+            `"${sourceId}" → "${parentSourceId}"`,
+        );
+      }
+
+      await tx
+        .update(destinations)
+        .set({
+          parentDestinationId,
+        })
+        .where(eq(destinations.id, destinationId));
+
+      linkedCount++;
+    }
+
+    console.log(`Linked ${linkedCount} neighborhoods to parent destinations.`);
   });
 
   console.log("Destination import complete.");
-}
+};
 
 importDestinations().catch((error) => {
   console.error(error);

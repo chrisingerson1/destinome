@@ -53,7 +53,8 @@ export async function destinationsListRoutes(app: FastifyInstance) {
 
       const offset = (page - 1) * limit;
 
-      const searchPatterns = getSearchPatterns(request.query.search ?? "");
+      const search = (request.query.search ?? "").trim();
+      const searchPatterns = getSearchPatterns(search);
       const searchCondition = buildSearchCondition(searchPatterns);
 
       const continentSlugs = splitURLParams(request.query.continents);
@@ -121,9 +122,27 @@ export async function destinationsListRoutes(app: FastifyInstance) {
         baseQuery
           .where(whereCondition)
           .orderBy(
-            // Use ICU collation for proper alphabetical sorting of destination names
-            sql`${destinations.name} COLLATE "und-x-icu" ASC`,
-            asc(destinations.id),
+            ...(search
+              ? [
+                  // Exact matches first, then prefix matches, then other matches.
+                  sql`CASE
+                    WHEN LOWER(${destinations.name}) = LOWER(${search}) THEN 0
+                    WHEN ${destinations.name} ILIKE ${`${search}%`} THEN 1
+                    ELSE 2
+                  END`,
+
+                  // Within each relevance group, prioritize better destinations.
+                  sql`${destinationTagScores.score} DESC NULLS LAST`,
+
+                  // Stable alphabetical tie-breaking.
+                  sql`${destinations.name} COLLATE "und-x-icu" ASC`,
+                  asc(destinations.id),
+                ]
+              : [
+                  // Preserve alphabetical sorting when not searching.
+                  sql`${destinations.name} COLLATE "und-x-icu" ASC`,
+                  asc(destinations.id),
+                ]),
           )
           .limit(limit)
           .offset(offset),

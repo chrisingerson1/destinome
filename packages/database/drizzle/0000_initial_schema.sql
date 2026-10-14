@@ -139,7 +139,7 @@ CREATE TABLE "destination_monthly_metrics" (
 CREATE TABLE "destination_tag_scores" (
 	"destination_id" integer NOT NULL,
 	"tag_id" integer NOT NULL,
-	"score" numeric(3, 1) NOT NULL,
+	"score" numeric(4, 2) NOT NULL,
 	"notes" text,
 	"methodology_version" varchar(50),
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,

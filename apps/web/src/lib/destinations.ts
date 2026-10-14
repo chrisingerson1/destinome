@@ -1,4 +1,15 @@
-import type { DestinationDetail, MapDestination } from "../types";
+import type {
+  CountrySummary,
+  DestinationDetail,
+  MapDestination,
+} from "../types";
+
+export type DestinationSearchResult = {
+  id: number;
+  name: string;
+  slug: string;
+  country: CountrySummary;
+};
 
 export async function getDestination(
   slug: string,
@@ -32,5 +43,20 @@ export const getMapDestinations = async (
   }
 
   const result: { data: MapDestination[] } = await response.json();
+  return result.data;
+};
+
+export const searchDestinations = async (
+  search: string,
+  signal?: AbortSignal,
+): Promise<DestinationSearchResult[]> => {
+  const params = new URLSearchParams({ search, limit: "8" });
+
+  const response = await fetch(`/api/destinations?${params}`, { signal });
+  if (!response.ok) {
+    throw new Error("Unable to search destinations");
+  }
+
+  const result: { data: DestinationSearchResult[] } = await response.json();
   return result.data;
 };

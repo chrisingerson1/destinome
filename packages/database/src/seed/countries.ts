@@ -39,6 +39,12 @@ const countryData = [
     continents: ["africa"],
   },
   {
+    name: "Antarctica",
+    iso2: "AQ",
+    iso3: "ATA",
+    continents: ["antarctica"],
+  },
+  {
     name: "Antigua and Barbuda",
     iso2: "AG",
     iso3: "ATG",
@@ -75,7 +81,7 @@ const countryData = [
     continents: ["asia", "europe"],
   },
   {
-    name: "The Bahamas",
+    name: "Bahamas",
     iso2: "BS",
     iso3: "BHS",
     continents: ["north-america"],
@@ -195,7 +201,7 @@ const countryData = [
     continents: ["north-america"],
   },
   {
-    name: "Cape Verde",
+    name: "Cabo Verde",
     iso2: "CV",
     iso3: "CPV",
     continents: ["africa"],
@@ -1174,6 +1180,12 @@ const countryData = [
     continents: ["asia"],
   },
   {
+    name: "Western Sahara",
+    iso2: "EH",
+    iso3: "ESH",
+    continents: ["africa"],
+  },
+  {
     name: "Yemen",
     iso2: "YE",
     iso3: "YEM",
@@ -1194,6 +1206,13 @@ const countryData = [
 ];
 
 const territoryData = [
+  {
+    name: "Åland Islands",
+    iso2: "AX",
+    iso3: "ALA",
+    continents: ["europe"],
+    parentCountry: "FI",
+  },
   {
     name: "American Samoa",
     iso2: "AS",
@@ -1223,6 +1242,27 @@ const territoryData = [
     parentCountry: "GB",
   },
   {
+    name: "Bonaire",
+    iso2: "BQ",
+    iso3: "BES",
+    continents: ["north-america"],
+    parentCountry: "NL",
+  },
+  {
+    name: "Bouvet Island",
+    iso2: "BV",
+    iso3: "BVT",
+    continents: ["antarctica"],
+    parentCountry: "NO",
+  },
+  {
+    name: "British Overseas Territories",
+    iso2: "IO",
+    iso3: "IOT",
+    continents: ["asia"],
+    parentCountry: "GB",
+  },
+  {
     name: "British Virgin Islands",
     iso2: "VG",
     iso3: "VGB",
@@ -1237,11 +1277,32 @@ const territoryData = [
     parentCountry: "GB",
   },
   {
+    name: "Cocos (Keeling) Islands",
+    iso2: "CC",
+    iso3: "CCK",
+    continents: ["oceania"],
+    parentCountry: "AU",
+  },
+  {
     name: "Cook Islands",
     iso2: "CK",
     iso3: "COK",
     continents: ["oceania"],
     parentCountry: "NZ",
+  },
+  {
+    name: "Curaçao",
+    iso2: "CW",
+    iso3: "CUW",
+    continents: ["north-america"],
+    parentCountry: "NL",
+  },
+  {
+    name: "Christmas Island",
+    iso2: "CX",
+    iso3: "CXR",
+    continents: ["oceania"],
+    parentCountry: "AU",
   },
   {
     name: "Falkland Islands",
@@ -1262,6 +1323,13 @@ const territoryData = [
     iso2: "GF",
     iso3: "GUF",
     continents: ["south-america"],
+    parentCountry: "FR",
+  },
+  {
+    name: "French Southern Territories",
+    iso2: "TF",
+    iso3: "ATF",
+    continents: ["antarctica"],
     parentCountry: "FR",
   },
   {
@@ -1298,6 +1366,20 @@ const territoryData = [
     iso3: "GUM",
     continents: ["oceania"],
     parentCountry: "US",
+  },
+  {
+    name: "Guernsey",
+    iso2: "GG",
+    iso3: "GGY",
+    continents: ["europe"],
+    parentCountry: "GB",
+  },
+  {
+    name: "Heard Island and McDonald Islands",
+    iso2: "HM",
+    iso3: "HMD",
+    continents: ["antarctica"],
+    parentCountry: "AU",
   },
   {
     name: "Hong Kong",
@@ -1363,11 +1445,25 @@ const territoryData = [
     parentCountry: "NZ",
   },
   {
+    name: "Norfolk Island",
+    iso2: "NF",
+    iso3: "NFK",
+    continents: ["oceania"],
+    parentCountry: "AU",
+  },
+  {
     name: "Northern Mariana Islands",
     iso2: "MP",
     iso3: "MNP",
     continents: ["oceania"],
     parentCountry: "US",
+  },
+  {
+    name: "Pitcairn Islands",
+    iso2: "PN",
+    iso3: "PCN",
+    continents: ["oceania"],
+    parentCountry: "GB",
   },
   {
     name: "Puerto Rico",
@@ -1391,6 +1487,13 @@ const territoryData = [
     parentCountry: "FR",
   },
   {
+    name: "Saint Helena, Ascension and Tristan da Cunha",
+    iso2: "SH",
+    iso3: "SHN",
+    continents: ["africa"],
+    parentCountry: "GB",
+  },
+  {
     name: "Saint Martin",
     iso2: "MF",
     iso3: "MAF",
@@ -1412,6 +1515,20 @@ const territoryData = [
     parentCountry: "NL",
   },
   {
+    name: "South Georgia and the South Sandwich Islands",
+    iso2: "GS",
+    iso3: "SGS",
+    continents: ["antarctica"],
+    parentCountry: "GB",
+  },
+  {
+    name: "Svalbard and Jan Mayen",
+    iso2: "SJ",
+    iso3: "SJM",
+    continents: ["europe"],
+    parentCountry: "NO",
+  },
+  {
     name: "Tokelau",
     iso2: "TK",
     iso3: "TKL",
@@ -1424,6 +1541,13 @@ const territoryData = [
     iso3: "TCA",
     continents: ["north-america"],
     parentCountry: "GB",
+  },
+  {
+    name: "United States Minor Outlying Islands",
+    iso2: "UM",
+    iso3: "UMI",
+    continents: ["oceania"],
+    parentCountry: "US",
   },
   {
     name: "United States Virgin Islands",
