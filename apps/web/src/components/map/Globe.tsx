@@ -25,7 +25,7 @@ import {
 } from "./createPushpinLayer";
 
 import { DestinationSearch } from "./DestinationSearch";
-import { ScoreLegend } from "./ScoreLegend";
+import { MapControls } from "./MapControls";
 
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs?v=2");
 
@@ -33,8 +33,8 @@ const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
 
 const MAP_STYLE = `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${MAPTILER_KEY}`;
 
-const DEFAULT_CENTER: [number, number] = [0, 20];
-const DEFAULT_ZOOM = 1.5;
+const DEFAULT_CENTER: [number, number] = [0, 35];
+const DEFAULT_ZOOM = 2.5;
 
 const CITY_SEARCH_ZOOM = 10;
 const NEIGHBORHOOD_SEARCH_ZOOM = 12.5;
@@ -534,39 +534,14 @@ export const Globe = () => {
         scoresBySlug={scoresBySlug}
       />
 
-      {/* Temporary category selector */}
-      <div className="pointer-events-none absolute top-20 left-5 z-20 w-[min(380px,calc(100vw-40px))]">
-        <div className="pointer-events-auto overflow-hidden rounded-xl border border-white/15 bg-slate-950/90 text-white shadow-xl backdrop-blur-md">
-          <label
-            htmlFor="globe-score-category"
-            className="block px-4 pt-3 text-xs font-medium text-slate-400"
-          >
-            Explore by category
-          </label>
-
-          <select
-            id="globe-score-category"
-            value={selectedCategory}
-            onChange={(event) => setSelectedCategory(event.target.value)}
-            disabled={scoresLoading || scoresError}
-            className="w-full cursor-pointer bg-transparent px-4 py-3 text-sm text-white outline-none disabled:cursor-not-allowed disabled:opacity-50 [&_option]:bg-slate-900"
-          >
-            {availableCategories.map((category) => (
-              <option key={category} value={category}>
-                {getCategoryLabel(category)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {scoresError && (
-          <p className="pointer-events-auto mt-2 rounded-lg bg-red-950/90 px-3 py-2 text-xs text-red-200">
-            Unable to load scoring categories.
-          </p>
-        )}
-      </div>
-
-      <ScoreLegend />
+      <MapControls
+        categories={availableCategories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        formatCategoryLabel={getCategoryLabel}
+        loading={scoresLoading}
+        error={scoresError}
+      />
 
       {mapError && (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/60 p-6">
