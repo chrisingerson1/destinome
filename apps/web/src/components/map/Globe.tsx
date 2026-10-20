@@ -67,6 +67,15 @@ export const Globe = () => {
   const navigate = useNavigate();
 
   // ---------------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------------
+
+  const [mapDestinations, setMapDestinations] = useState<MapDestination[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("overall");
+  const [minimumScore, setMinimumScore] = useState<number | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  // ---------------------------------------------------------------------------
   // References
   // ---------------------------------------------------------------------------
 
@@ -76,14 +85,17 @@ export const Globe = () => {
   const hoverPopupRef = useRef<Popup | null>(null);
   const detailPopupRef = useRef<Popup | null>(null);
   const destinationsBySlugRef = useRef(new Map<string, MapDestination>());
+  const minimumScoreRef = useRef(minimumScore);
 
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    minimumScoreRef.current = minimumScore;
 
-  const [mapDestinations, setMapDestinations] = useState<MapDestination[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("overall");
-  const [mapError, setMapError] = useState<string | null>(null);
+    pinLayerRef.current?.setMinimumScore(minimumScore);
+
+    // Dismiss any hover tooltip from the previous filter.
+    hoverPopupRef.current?.remove();
+    hoverPopupRef.current = null;
+  }, [minimumScore]);
 
   // ---------------------------------------------------------------------------
   // Category scores
@@ -449,11 +461,11 @@ export const Globe = () => {
 
         // Only create the layer once.
         const layer = createPushpinLayer(destinations);
-
         map.addLayer(layer);
 
         // The handlers and scoring effect access this same instance.
         pinLayerRef.current = layer;
+        layer.setMinimumScore(minimumScoreRef.current);
 
         // Category scores may have loaded before map destinations.
         if (scoresLoadedRef.current) {
@@ -563,6 +575,8 @@ export const Globe = () => {
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
         formatCategoryLabel={getCategoryLabel}
+        minimumScore={minimumScore}
+        onMinimumScoreChange={setMinimumScore}
         loading={scoresLoading}
         error={scoresError}
       />

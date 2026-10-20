@@ -10,6 +10,8 @@ type MapControlsProps = {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   formatCategoryLabel: (category: string) => string;
+  minimumScore: number | null;
+  onMinimumScoreChange: (score: number | null) => void;
   loading?: boolean;
   error?: boolean;
 };
@@ -19,6 +21,8 @@ export const MapControls = ({
   selectedCategory,
   onCategoryChange,
   formatCategoryLabel,
+  minimumScore,
+  onMinimumScoreChange,
   loading = false,
   error = false,
 }: MapControlsProps) => {
@@ -52,6 +56,8 @@ export const MapControls = ({
         <ScoreLegend
           expanded={openPanel === "legend"}
           onToggle={() => togglePanel("legend")}
+          minimumScore={minimumScore}
+          onMinimumScoreChange={onMinimumScoreChange}
         />
       </div>
     </div>

@@ -29,6 +29,7 @@ export type InteractivePushpinLayer = CustomLayerInterface & {
     category: string,
     scores: ReadonlyMap<number, number | null>,
   ) => void;
+  setMinimumScore: (score: number | null) => void;
 };
 
 // -----------------------------------------------------------------------------
@@ -71,6 +72,12 @@ const easeOutBack = (t: number): number => {
 
   return 1 + (c + 1) * x ** 3 + c * x ** 2;
 };
+
+// -----------------------------------------------------------------------------
+// Score filtering animation
+// -----------------------------------------------------------------------------
+
+const FILTER_ANIMATION_DURATION = 220;
 
 // -----------------------------------------------------------------------------
 // Score tiers
@@ -191,6 +198,14 @@ export const createPushpinLayer = (
   const activeScores = pins.map((pin) => pin.overallScore);
   const appearances = activeScores.map((score) => getPinAppearance(score));
   const renderIndices = pins.map((_, index) => index);
+
+  let minimumScore: number | null = null;
+
+  // One animation progress value per destination.
+  // 1 = fully visible, 0 = completely hidden.
+  const filterProgress = new Float32Array(pins.length);
+
+  filterProgress.fill(1);
 
   const sortRenderIndices = () => {
     renderIndices.sort((a, b) => {
@@ -483,10 +498,39 @@ export const createPushpinLayer = (
       }
 
       // -----------------------------------------------------------------------
-      // Render all destinations
+      // Render destinations with score filtering
       // -----------------------------------------------------------------------
 
+      let filterAnimating = false;
+
       for (const index of renderIndices) {
+        const score = activeScores[index];
+
+        const passesFilter =
+          minimumScore === null || (score !== null && score >= minimumScore);
+
+        const targetProgress = passesFilter ? 1 : 0;
+        const previousProgress = filterProgress[index];
+        const nextProgress = THREE.MathUtils.clamp(
+          previousProgress +
+            (passesFilter ? 1 : -1) * (deltaTime / FILTER_ANIMATION_DURATION),
+          0,
+          1,
+        );
+
+        filterProgress[index] = nextProgress;
+
+        if (nextProgress !== targetProgress) {
+          filterAnimating = true;
+        }
+
+        // Completely hidden pins require no further processing.
+        if (nextProgress <= 0) {
+          continue;
+        }
+
+        const filterScale = THREE.MathUtils.smoothstep(nextProgress, 0, 1);
+
         const sourceMatrix = isGlobe
           ? globeMatrices[index]
           : mercatorMatrices[index];
@@ -497,6 +541,9 @@ export const createPushpinLayer = (
 
         // Geographic position and global zoom scaling.
         instanceMatrix.copy(sourceMatrix).scale(scaleVector);
+
+        // Smoothly shrink or grow pins based on the active filter.
+        instanceMatrix.scale(revealScaleVector.setScalar(filterScale));
 
         const pin = pins[index];
 
@@ -671,7 +718,7 @@ export const createPushpinLayer = (
         ? neighborhoodAnimationTime < NEIGHBORHOOD_TOTAL_DURATION
         : neighborhoodAnimationTime > 0;
 
-      if (isNeighborhoodAnimating) {
+      if (isNeighborhoodAnimating || filterAnimating) {
         map.triggerRepaint();
       }
     },
@@ -699,6 +746,13 @@ export const createPushpinLayer = (
       let bestDistance = Infinity;
 
       for (const position of screenPositions) {
+        const score = activeScores[position.index];
+
+        // Pins excluded by the active filter cannot be selected.
+        if (minimumScore !== null && (score === null || score < minimumScore)) {
+          continue;
+        }
+
         const dx = position.x - x;
         const dy = position.y - y;
 
@@ -708,18 +762,14 @@ export const createPushpinLayer = (
           continue;
         }
 
-        const score = activeScores[position.index] ?? -1;
+        const priority = score ?? -1;
 
-        // When multiple pins occupy the same clickable
-        // area, prefer the higher Overall Score.
-        //
-        // For equal scores, choose the closer head.
         if (
-          score > bestScore ||
-          (score === bestScore && distance < bestDistance)
+          priority > bestScore ||
+          (priority === bestScore && distance < bestDistance)
         ) {
           bestIndex = position.index;
-          bestScore = score;
+          bestScore = priority;
           bestDistance = distance;
         }
       }
@@ -754,6 +804,12 @@ export const createPushpinLayer = (
       sortRenderIndices();
 
       // Request a new frame without rebuilding the layer.
+      map?.triggerRepaint();
+    },
+    setMinimumScore: (score) => {
+      minimumScore = score;
+
+      // Animate using the existing layer and instance meshes.
       map?.triggerRepaint();
     },
   };

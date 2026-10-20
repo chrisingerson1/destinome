@@ -6,6 +6,8 @@ import { SCORE_TIERS, SCORE_LEGEND_ORDER } from "../../config/scoreTiers";
 type ScoreLegendProps = {
   expanded: boolean;
   onToggle: () => void;
+  minimumScore: number | null;
+  onMinimumScoreChange: (score: number | null) => void;
 };
 
 type TooltipState = {
@@ -14,7 +16,14 @@ type TooltipState = {
   y: number;
 };
 
-export const ScoreLegend = ({ expanded, onToggle }: ScoreLegendProps) => {
+const SCORE_THRESHOLDS: (number | null)[] = [9.5, 9, 8, 7, 6, 0];
+
+export const ScoreLegend = ({
+  expanded,
+  onToggle,
+  minimumScore,
+  onMinimumScoreChange,
+}: ScoreLegendProps) => {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   const tiers = SCORE_LEGEND_ORDER.filter((tierKey) => tierKey !== "unrated");
@@ -73,15 +82,28 @@ export const ScoreLegend = ({ expanded, onToggle }: ScoreLegendProps) => {
         >
           <div className="min-h-0 overflow-hidden">
             <div className="flex gap-1.5 px-4 pb-4 pt-1">
-              {tiers.map((tierKey) => {
+              {tiers.map((tierKey, index) => {
                 const tier = SCORE_TIERS[tierKey];
+                const threshold = SCORE_THRESHOLDS[index];
+
+                const selected =
+                  minimumScore !== null && minimumScore === threshold;
 
                 return (
-                  <div
+                  <button
                     key={tierKey}
-                    tabIndex={expanded ? 0 : -1}
-                    role="img"
-                    aria-label={tier.label}
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={
+                      threshold === 0
+                        ? "Show only rated destinations"
+                        : `Show destinations scoring ${threshold?.toFixed(1)} or higher`
+                    }
+                    onClick={() => {
+                      hideTooltip();
+
+                      onMinimumScoreChange(selected ? null : threshold);
+                    }}
                     onMouseEnter={(event) =>
                       showTooltip(event.currentTarget, tier.label)
                     }
@@ -90,13 +112,37 @@ export const ScoreLegend = ({ expanded, onToggle }: ScoreLegendProps) => {
                       showTooltip(event.currentTarget, tier.label)
                     }
                     onBlur={hideTooltip}
-                    className="h-2 flex-1 cursor-default rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                    className={`h-2 flex-1 cursor-pointer rounded-full transition-all duration-200 hover:brightness-125 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white ${
+                      selected
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-slate-950"
+                        : ""
+                    }`}
                     style={{
                       backgroundColor: tier.color,
                     }}
                   />
                 );
               })}
+            </div>
+
+            {/* Minimum score display and clear button */}
+            <div className="flex items-center justify-between gap-2 px-4 pb-3">
+              <span className="text-xs text-slate-400">
+                {minimumScore === null
+                  ? "Showing all destinations"
+                  : minimumScore === 0
+                    ? "Showing rated destinations"
+                    : `Showing scores ≥ ${minimumScore.toFixed(1)}`}
+              </span>
+              {minimumScore !== null && (
+                <button
+                  type="button"
+                  onClick={() => onMinimumScoreChange(null)}
+                  className="cursor-pointer text-xs text-slate-400 transition-colors hover:text-white"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
         </div>
