@@ -38,9 +38,9 @@ export type InteractivePushpinLayer = CustomLayerInterface & {
 
 const EARTH_RADIUS = 6_371_008.8;
 
-const PIN_HEIGHT = 75_000;
+const PIN_HEIGHT = 100_000;
 const HEAD_RADIUS = 34_000;
-const SHAFT_RADIUS = 4_000;
+const SHAFT_RADIUS = 5_000;
 
 const BASE_HEAD_CENTER_Y = PIN_HEIGHT + HEAD_RADIUS * 0.35;
 
@@ -251,11 +251,9 @@ export const createPushpinLayer = (
     PIN_HEIGHT,
     8,
   );
-
   shaftGeometry.translate(0, PIN_HEIGHT / 2, 0);
 
   const headGeometry = new THREE.SphereGeometry(HEAD_RADIUS, 28, 18);
-
   headGeometry.translate(0, BASE_HEAD_CENTER_Y, 0);
 
   // ---------------------------------------------------------------------------
@@ -333,7 +331,6 @@ export const createPushpinLayer = (
   scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
   const light = new THREE.DirectionalLight(0xffffff, 1.2);
-
   light.position.set(-1, 3, 2);
   scene.add(light);
 

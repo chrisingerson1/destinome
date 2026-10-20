@@ -138,6 +138,22 @@ export const Globe = () => {
     return scores;
   }, [destinationScores, selectedCategory]);
 
+  const matchingDestinationCount = useMemo(() => {
+    if (minimumScore === null) {
+      return mapDestinations.length;
+    }
+
+    return mapDestinations.reduce((count, destination) => {
+      const score = activeScoreMap.has(destination.id)
+        ? (activeScoreMap.get(destination.id) ?? null)
+        : selectedCategory === "overall"
+          ? destination.overallScore
+          : null;
+
+      return count + (score !== null && score >= minimumScore ? 1 : 0);
+    }, 0);
+  }, [mapDestinations, activeScoreMap, selectedCategory, minimumScore]);
+
   const parentNamesBySlug = useMemo(() => {
     const destinationsById = new Map(
       mapDestinations.map((destination) => [destination.id, destination]),
@@ -577,6 +593,8 @@ export const Globe = () => {
         formatCategoryLabel={getCategoryLabel}
         minimumScore={minimumScore}
         onMinimumScoreChange={setMinimumScore}
+        totalCount={mapDestinations.length}
+        matchingCount={matchingDestinationCount}
         loading={scoresLoading}
         error={scoresError}
       />

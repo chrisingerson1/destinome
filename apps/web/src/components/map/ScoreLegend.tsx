@@ -8,6 +8,8 @@ type ScoreLegendProps = {
   onToggle: () => void;
   minimumScore: number | null;
   onMinimumScoreChange: (score: number | null) => void;
+  totalCount: number;
+  matchingCount: number;
 };
 
 type TooltipState = {
@@ -23,6 +25,8 @@ export const ScoreLegend = ({
   onToggle,
   minimumScore,
   onMinimumScoreChange,
+  totalCount,
+  matchingCount,
 }: ScoreLegendProps) => {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
@@ -53,7 +57,9 @@ export const ScoreLegend = ({
           }}
           className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left"
         >
-          <span className="text-sm font-semibold text-white">Score Legend</span>
+          <span className="text-sm font-semibold text-white">
+            Score Legend & Filtering
+          </span>
 
           <svg
             aria-hidden="true"
@@ -127,18 +133,29 @@ export const ScoreLegend = ({
 
             {/* Minimum score display and clear button */}
             <div className="flex items-center justify-between gap-2 px-4 pb-3">
-              <span className="text-xs text-slate-400">
-                {minimumScore === null
-                  ? "Showing all destinations"
-                  : minimumScore === 0
-                    ? "Showing rated destinations"
-                    : `Showing scores ≥ ${minimumScore.toFixed(1)}`}
-              </span>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-xs text-slate-400">
+                  {minimumScore === null
+                    ? "Showing all destinations"
+                    : minimumScore === 0
+                      ? "Showing rated destinations"
+                      : `Showing scores ≥ ${minimumScore.toFixed(1)}`}
+                </span>
+
+                <span className="text-xs font-medium tabular-nums text-slate-200">
+                  {totalCount === 0
+                    ? "Loading destinations..."
+                    : minimumScore === null
+                      ? `${totalCount.toLocaleString()} destinations`
+                      : `${matchingCount.toLocaleString()} of ${totalCount.toLocaleString()} destinations`}
+                </span>
+              </div>
+
               {minimumScore !== null && (
                 <button
                   type="button"
                   onClick={() => onMinimumScoreChange(null)}
-                  className="cursor-pointer text-xs text-slate-400 transition-colors hover:text-white"
+                  className="shrink-0 cursor-pointer text-xs text-slate-400 transition-colors hover:text-white"
                 >
                   Clear
                 </button>

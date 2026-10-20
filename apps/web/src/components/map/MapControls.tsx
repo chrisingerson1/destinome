@@ -12,6 +12,8 @@ type MapControlsProps = {
   formatCategoryLabel: (category: string) => string;
   minimumScore: number | null;
   onMinimumScoreChange: (score: number | null) => void;
+  totalCount: number;
+  matchingCount: number;
   loading?: boolean;
   error?: boolean;
 };
@@ -23,6 +25,8 @@ export const MapControls = ({
   formatCategoryLabel,
   minimumScore,
   onMinimumScoreChange,
+  totalCount,
+  matchingCount,
   loading = false,
   error = false,
 }: MapControlsProps) => {
@@ -58,6 +62,8 @@ export const MapControls = ({
           onToggle={() => togglePanel("legend")}
           minimumScore={minimumScore}
           onMinimumScoreChange={onMinimumScoreChange}
+          totalCount={totalCount}
+          matchingCount={matchingCount}
         />
       </div>
     </div>
