@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   searchDestinations,
@@ -8,17 +8,33 @@ import {
 type DestinationSearchProps = {
   onSelect: (destination: DestinationSearchResult) => void;
   scoresBySlug: ReadonlyMap<string, number | null>;
+  parentNamesBySlug: ReadonlyMap<string, string>;
 };
+
+const normalizeSearchText = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[,\s]+/g, " ")
+    .trim();
 
 export const DestinationSearch = ({
   onSelect,
   scoresBySlug,
+  parentNamesBySlug,
 }: DestinationSearchProps) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DestinationSearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+
+  const knownParents = useMemo(
+    () =>
+      [
+        ...new Set([...parentNamesBySlug.values()].map(normalizeSearchText)),
+      ].sort((a, b) => b.length - a.length),
+    [parentNamesBySlug],
+  );
 
   useEffect(() => {
     const search = query.trim();
@@ -35,10 +51,59 @@ export const DestinationSearch = ({
 
     const timeout = setTimeout(async () => {
       try {
-        const destinations = await searchDestinations(
-          search,
-          controller.signal,
-        );
+        const normalizedQuery = normalizeSearchText(search);
+        const words = normalizedQuery.split(" ");
+
+        // Detect a parent name or partial parent name at the
+        // end of the query, e.g. "charlestown bo".
+        const parentMatch = words
+          .slice(1)
+          .map((_, index) => {
+            const split = index + 1;
+
+            return {
+              destinationQuery: words.slice(0, split).join(" "),
+              parentPrefix: words.slice(split).join(" "),
+            };
+          })
+          .find(
+            ({ destinationQuery, parentPrefix }) =>
+              destinationQuery.length >= 2 &&
+              knownParents.some((parent) => parent.startsWith(parentPrefix)),
+          );
+
+        const hasExactParent =
+          parentMatch !== undefined &&
+          knownParents.includes(parentMatch.parentPrefix);
+
+        // First try the normal search, unless the complete
+        // parent name was explicitly supplied.
+        let destinations: DestinationSearchResult[] = hasExactParent
+          ? []
+          : await searchDestinations(search, controller.signal);
+
+        // If necessary, search for the child destination and
+        // filter by its parent, accepting partial parent names.
+        if (parentMatch && (hasExactParent || destinations.length === 0)) {
+          const matches = await searchDestinations(
+            parentMatch.destinationQuery,
+            controller.signal,
+          );
+
+          const contextualMatches = matches.filter((destination) =>
+            normalizeSearchText(
+              parentNamesBySlug.get(destination.slug) ?? "",
+            ).startsWith(parentMatch.parentPrefix),
+          );
+
+          if (contextualMatches.length > 0) {
+            destinations = contextualMatches;
+          } else if (hasExactParent) {
+            // Preserve ordinary searches when an apparent
+            // parent match doesn't actually resolve.
+            destinations = await searchDestinations(search, controller.signal);
+          }
+        }
 
         if (controller.signal.aborted) return;
 
@@ -60,7 +125,7 @@ export const DestinationSearch = ({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [query]);
+  }, [query, knownParents, parentNamesBySlug]);
 
   const handleSelect = (destination: DestinationSearchResult) => {
     setQuery(destination.name);
@@ -155,6 +220,7 @@ export const DestinationSearch = ({
             {!isLoading &&
               results.map((destination, index) => {
                 const score = scoresBySlug.get(destination.slug);
+                const parentName = parentNamesBySlug.get(destination.slug);
 
                 return (
                   <button
@@ -175,8 +241,13 @@ export const DestinationSearch = ({
                       <p className="truncate text-sm font-medium">
                         {destination.name}
                       </p>
-
                       <p className="truncate text-xs text-slate-400">
+                        {parentName && (
+                          <>
+                            <span className="text-slate-300">{parentName}</span>
+                            <span className="mx-1 text-slate-500">·</span>
+                          </>
+                        )}
                         {destination.country.name}
                       </p>
                     </div>

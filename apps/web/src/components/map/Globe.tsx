@@ -126,16 +126,41 @@ export const Globe = () => {
     return scores;
   }, [destinationScores, selectedCategory]);
 
-  const scoresBySlug = useMemo(
-    () =>
-      new Map<string, number | null>(
-        mapDestinations.map((destination) => [
+  const parentNamesBySlug = useMemo(() => {
+    const destinationsById = new Map(
+      mapDestinations.map((destination) => [destination.id, destination]),
+    );
+
+    const parents = new Map<string, string>();
+
+    for (const destination of mapDestinations) {
+      if (destination.parentDestinationId == null) {
+        continue;
+      }
+
+      const parent = destinationsById.get(destination.parentDestinationId);
+      if (parent) {
+        parents.set(destination.slug, parent.name);
+      }
+    }
+
+    return parents;
+  }, [mapDestinations]);
+
+  const scoresBySlug = useMemo(() => {
+    return new Map<string, number | null>(
+      mapDestinations.map((destination) => {
+        const score = activeScoreMap.get(destination.id);
+
+        return [
           destination.slug,
-          destination.overallScore,
-        ]),
-      ),
-    [mapDestinations],
-  );
+          selectedCategory === "overall"
+            ? (score ?? destination.overallScore)
+            : (score ?? null),
+        ];
+      }),
+    );
+  }, [mapDestinations, activeScoreMap, selectedCategory]);
 
   // ---------------------------------------------------------------------------
   // Keep the latest category data available to MapLibre callbacks
@@ -313,7 +338,6 @@ export const Globe = () => {
       if (!layer) return;
 
       const destination = layer.pick(event.point);
-
       map.getCanvas().style.cursor = destination ? "pointer" : "";
 
       if (!destination) {
@@ -386,7 +410,6 @@ export const Globe = () => {
       if (!layer) return;
 
       const destination = layer.pick(event.point);
-
       if (!destination) {
         hoveredDestinationId = null;
 
@@ -532,6 +555,7 @@ export const Globe = () => {
       <DestinationSearch
         onSelect={handleSearchSelect}
         scoresBySlug={scoresBySlug}
+        parentNamesBySlug={parentNamesBySlug}
       />
 
       <MapControls
