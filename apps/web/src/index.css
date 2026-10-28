@@ -12,6 +12,126 @@ body {
   min-width: 320px;
 }
 
+.home-stars,
+.home-launch-stars {
+  background-image:
+    radial-gradient(circle at 4% 16%, rgb(186 230 253 / 55%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 9% 71%, rgb(148 163 184 / 45%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 14% 38%, rgb(226 232 240 / 35%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 18% 89%, rgb(125 211 252 / 38%) 0 0.8px, transparent 1.4px),
+    radial-gradient(circle at 23% 8%, rgb(148 163 184 / 34%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 27% 57%, rgb(226 232 240 / 48%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 31% 26%, rgb(125 211 252 / 25%) 0 0.7px, transparent 1.3px),
+    radial-gradient(circle at 36% 78%, rgb(148 163 184 / 40%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 41% 12%, rgb(226 232 240 / 30%) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 44% 49%, rgb(186 230 253 / 50%) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 48% 93%, rgb(148 163 184 / 30%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 53% 34%, rgb(226 232 240 / 38%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 57% 67%, rgb(125 211 252 / 35%) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 61% 5%, rgb(148 163 184 / 42%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 65% 84%, rgb(226 232 240 / 32%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 69% 42%, rgb(186 230 253 / 46%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 73% 19%, rgb(148 163 184 / 28%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 77% 74%, rgb(226 232 240 / 40%) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 81% 51%, rgb(125 211 252 / 32%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 86% 9%, rgb(226 232 240 / 45%) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 89% 86%, rgb(148 163 184 / 35%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 93% 31%, rgb(186 230 253 / 40%) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 96% 63%, rgb(226 232 240 / 30%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 7% 47%, rgb(125 211 252 / 24%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 21% 63%, rgb(226 232 240 / 27%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 34% 96%, rgb(148 163 184 / 32%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 51% 18%, rgb(186 230 253 / 28%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 64% 55%, rgb(226 232 240 / 25%) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 79% 3%, rgb(148 163 184 / 30%) 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 91% 54%, rgb(125 211 252 / 26%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 2% 82%, rgb(226 232 240 / 25%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 6% 28%, rgb(148 163 184 / 32%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 12% 94%, rgb(125 211 252 / 22%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 16% 53%, rgb(226 232 240 / 30%) 0 0.7px, transparent 1.1px),
+    radial-gradient(circle at 20% 21%, rgb(148 163 184 / 24%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 25% 76%, rgb(186 230 253 / 27%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 29% 43%, rgb(226 232 240 / 23%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 33% 4%, rgb(148 163 184 / 28%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 38% 65%, rgb(125 211 252 / 20%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 42% 86%, rgb(226 232 240 / 26%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 46% 29%, rgb(148 163 184 / 25%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 50% 71%, rgb(186 230 253 / 24%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 55% 2%, rgb(226 232 240 / 28%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 59% 48%, rgb(148 163 184 / 22%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 63% 94%, rgb(125 211 252 / 25%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 67% 27%, rgb(226 232 240 / 24%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 71% 68%, rgb(148 163 184 / 26%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 75% 91%, rgb(186 230 253 / 22%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 80% 37%, rgb(226 232 240 / 29%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 84% 66%, rgb(148 163 184 / 24%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 88% 22%, rgb(125 211 252 / 21%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 92% 96%, rgb(226 232 240 / 27%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 95% 45%, rgb(148 163 184 / 25%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 98% 77%, rgb(186 230 253 / 23%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 11% 5%, rgb(226 232 240 / 22%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 39% 35%, rgb(148 163 184 / 24%) 0 0.5px, transparent 0.9px),
+    radial-gradient(circle at 58% 79%, rgb(125 211 252 / 20%) 0 0.6px, transparent 1px),
+    radial-gradient(circle at 83% 97%, rgb(226 232 240 / 25%) 0 0.5px, transparent 0.9px);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.home-stars {
+  will-change: transform;
+}
+
+.home-globe {
+  background-image: radial-gradient(
+    circle at 35% 30%,
+    #1c3553 0%,
+    #0b1628 46%,
+    #030811 82%
+  );
+  box-shadow:
+    inset -32px -22px 60px rgb(0 0 0 / 65%),
+    0 0 80px rgb(56 189 248 / 9%);
+}
+
+.home-launch-stars {
+  animation: home-stars-approach 450ms ease-in forwards;
+  transform-origin: center;
+}
+
+@keyframes home-stars-approach {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(2.6);
+  }
+}
+
+@keyframes map-controls-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.destinome-map-entering > :not(:first-child) {
+  animation: map-controls-arrive 400ms ease-out 1500ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-launch-stars,
+  .destinome-map-entering > :not(:first-child) {
+    animation: none;
+  }
+}
+
 /* ==========================================
    DESTINATION HOVER TOOLTIP
 ========================================== */

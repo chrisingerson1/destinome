@@ -24,10 +24,10 @@ export const DestinationHero = ({ destination }: DestinationHeroProps) => {
       {/* Content */}
       <div className="relative flex min-h-100 flex-col justify-between p-8 md:p-12">
         <Link
-          to="/"
+          to="/map"
           className="w-fit text-sm text-slate-300 transition hover:text-white"
         >
-          ← Back to Destinome
+          ← Back to map
         </Link>
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>

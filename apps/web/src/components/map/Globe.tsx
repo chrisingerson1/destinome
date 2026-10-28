@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 
 import {
   Map as MapLibreMap,
@@ -35,6 +35,7 @@ const MAP_STYLE = `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${MAPT
 
 const DEFAULT_CENTER: [number, number] = [0, 35];
 const DEFAULT_ZOOM = 2.5;
+const HOME_TRANSITION_START_ZOOM = -1.5;
 
 const CITY_SEARCH_ZOOM = 10;
 const NEIGHBORHOOD_SEARCH_ZOOM = 12.5;
@@ -65,6 +66,10 @@ const getScoreLabel = (score: number | null): string =>
 
 export const Globe = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const animateFromHome = Boolean(
+    (location.state as { fromHome?: boolean } | null)?.fromHome,
+  );
 
   // ---------------------------------------------------------------------------
   // State
@@ -73,7 +78,9 @@ export const Globe = () => {
   const [mapDestinations, setMapDestinations] = useState<MapDestination[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("overall");
   const [minimumScore, setMinimumScore] = useState<number | null>(null);
-  const [mapError, setMapError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(() =>
+    MAPTILER_KEY ? null : "Missing VITE_MAPTILER_KEY",
+  );
 
   // ---------------------------------------------------------------------------
   // References
@@ -218,10 +225,7 @@ export const Globe = () => {
 
     if (!container) return;
 
-    if (!MAPTILER_KEY) {
-      setMapError("Missing VITE_MAPTILER_KEY");
-      return;
-    }
+    if (!MAPTILER_KEY) return;
 
     const controller = new AbortController();
 
@@ -231,7 +235,7 @@ export const Globe = () => {
       container,
       style: MAP_STYLE,
       center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
+      zoom: animateFromHome ? HOME_TRANSITION_START_ZOOM : DEFAULT_ZOOM,
       pitch: 0,
       bearing: 0,
     });
@@ -255,6 +259,20 @@ export const Globe = () => {
 
       map.setProjection({ type: "globe" });
     });
+
+    if (animateFromHome) {
+      map.once("load", () => {
+        if (disposed) return;
+
+        map.easeTo({
+          center: DEFAULT_CENTER,
+          zoom: DEFAULT_ZOOM,
+          duration: 1800,
+          easing: (progress) => 1 - Math.pow(1 - progress, 3),
+          essential: true,
+        });
+      });
+    }
 
     // -------------------------------------------------------------------------
     // Popup helpers
@@ -449,6 +467,18 @@ export const Globe = () => {
 
       hoveredDestinationId = null;
 
+      const destinationZoom =
+        destination.parentDestinationId !== null
+          ? NEIGHBORHOOD_SEARCH_ZOOM
+          : CITY_SEARCH_ZOOM;
+
+      map.flyTo({
+        center: [destination.longitude, destination.latitude],
+        zoom: Math.max(map.getZoom(), destinationZoom),
+        speed: 1.2,
+        essential: true,
+      });
+
       showDestinationPopup(destination);
     };
 
@@ -504,9 +534,18 @@ export const Globe = () => {
     };
 
     map.once("load", () => {
-      if (!disposed) {
-        void loadDestinations();
+      if (disposed) return;
+
+      if (animateFromHome) {
+        map.once("moveend", () => {
+          if (!disposed) {
+            void loadDestinations();
+          }
+        });
+        return;
       }
+
+      void loadDestinations();
     });
 
     map.on("error", (event) => {
@@ -536,7 +575,7 @@ export const Globe = () => {
 
       map.remove();
     };
-  }, [navigate]);
+  }, [animateFromHome, navigate]);
 
   // ---------------------------------------------------------------------------
   // Destination search
@@ -573,7 +612,11 @@ export const Globe = () => {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-black">
+    <div
+      className={`relative h-dvh w-full overflow-hidden bg-black ${
+        animateFromHome ? "destinome-map-entering" : ""
+      }`}
+    >
       <div
         ref={containerRef}
         className="h-full w-full"
