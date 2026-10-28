@@ -30,8 +30,8 @@ export const destinationTagScores = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
     score: numeric("score", {
-      precision: 3,
-      scale: 1,
+      precision: 4,
+      scale: 2,
       mode: "number",
     }).notNull(),
     notes: text("notes"),

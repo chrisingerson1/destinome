@@ -152,14 +152,43 @@ const validateParentDestinations = (rows: CsvRow[]): void => {
       );
     }
 
-    // Enforce a single level of parent-child relationships.
-    // This also prevents circular references.
-    if (nullableString(parent.row.parent_source_id)) {
-      throw new Error(
-        `Row ${line}: "${row.name}" references ` +
-          `"${parent.row.name}", which already has a parent. ` +
-          `Nested parent relationships are not supported.`,
-      );
+    // Allow up to two levels of parent relationships:
+    // City -> Neighborhood -> Sub-neighborhood.
+    const grandparentSourceId = nullableString(parent.row.parent_source_id);
+
+    if (grandparentSourceId) {
+      // Prevent circular relationships between two destinations.
+      if (grandparentSourceId === sourceId) {
+        throw new Error(
+          `Row ${line}: Circular parent relationship detected for "${row.name}"`,
+        );
+      }
+
+      const grandparent = sourceRows.get(grandparentSourceId);
+
+      if (!grandparent) {
+        throw new Error(
+          `Row ${line}: Grandparent source_id "${grandparentSourceId}" ` +
+            `for "${row.name}" was not found in the CSV`,
+        );
+      }
+
+      // The entire hierarchy must belong to the same country.
+      if (grandparent.row.country !== row.country) {
+        throw new Error(
+          `Row ${line}: "${row.name}" and its grandparent ` +
+            `"${grandparent.row.name}" belong to different countries`,
+        );
+      }
+
+      // Reject a third level of nesting.
+      // This also rejects longer circular relationships.
+      if (nullableString(grandparent.row.parent_source_id)) {
+        throw new Error(
+          `Row ${line}: "${row.name}" exceeds the maximum ` +
+            `nesting depth of two parent relationships`,
+        );
+      }
     }
   }
 };
