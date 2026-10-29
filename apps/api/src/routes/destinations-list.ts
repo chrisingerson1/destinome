@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
 
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import {
   countries,
@@ -22,6 +23,7 @@ import {
   parseScoreParams,
   splitURLParams,
 } from "../utils/index.js";
+import { InvalidScoreFilterError, type ScoreFilter } from "../utils/parseScoreParams.js";
 
 type DestinationQuery = {
   page?: string;
@@ -30,7 +32,10 @@ type DestinationQuery = {
   continents?: string;
   climates?: string;
   scores?: string;
+  sort?: string;
 };
+
+const parentDestination = alias(destinations, "parent_destination");
 
 export async function destinationsListRoutes(app: FastifyInstance) {
   app.get<{ Querystring: DestinationQuery }>(
@@ -51,6 +56,12 @@ export async function destinationsListRoutes(app: FastifyInstance) {
           .send({ error: "Limit must be between 1 and 100" });
       }
 
+      if (request.query.sort !== undefined && request.query.sort !== "overall") {
+        return reply
+          .code(StatusCodes.BAD_REQUEST)
+          .send({ error: "Sort must be overall when provided" });
+      }
+
       const offset = (page - 1) * limit;
 
       const search = (request.query.search ?? "").trim();
@@ -63,7 +74,30 @@ export async function destinationsListRoutes(app: FastifyInstance) {
       const climateCodes = splitURLParams(request.query.climates, false);
       const climateCondition = buildClimateCondition(climateCodes);
 
-      const scoreFilters = parseScoreParams(request.query.scores);
+      let scoreFilters: ScoreFilter[];
+      try {
+        scoreFilters = parseScoreParams(request.query.scores);
+      } catch (error) {
+        if (!(error instanceof InvalidScoreFilterError)) throw error;
+        return reply.code(StatusCodes.BAD_REQUEST).send({ error: error.message });
+      }
+
+      const requestedSlugs = [...new Set(scoreFilters.map(({ slug }) => slug))];
+      if (requestedSlugs.length > 0) {
+        const knownTags = await db
+          .select({ slug: tags.slug })
+          .from(tags)
+          .where(inArray(tags.slug, requestedSlugs));
+        const knownSlugs = new Set(knownTags.map(({ slug }) => slug));
+        const unknownSlugs = requestedSlugs.filter((slug) => !knownSlugs.has(slug));
+
+        if (unknownSlugs.length > 0) {
+          return reply.code(StatusCodes.BAD_REQUEST).send({
+            error: `Unknown score categories: ${unknownSlugs.join(", ")}`,
+          });
+        }
+      }
+
       const scoreCondition = buildScoreCondition(scoreFilters);
 
       const whereCondition = and(
@@ -91,9 +125,19 @@ export async function destinationsListRoutes(app: FastifyInstance) {
           >`COALESCE(${parentAdminArea.name}, ${adminArea.name})`,
 
           overallScore: destinationTagScores.score,
+          parentDestinationId: destinations.parentDestinationId,
+          parentDestination: {
+            id: parentDestination.id,
+            name: parentDestination.name,
+            slug: parentDestination.slug,
+          },
         })
         .from(destinations)
         .innerJoin(countries, eq(destinations.countryId, countries.id))
+        .leftJoin(
+          parentDestination,
+          eq(destinations.parentDestinationId, parentDestination.id),
+        )
         .leftJoin(
           adminArea,
           eq(destinations.administrativeAreaId, adminArea.id),
@@ -122,7 +166,13 @@ export async function destinationsListRoutes(app: FastifyInstance) {
         baseQuery
           .where(whereCondition)
           .orderBy(
-            ...(search
+            ...(request.query.sort === "overall"
+              ? [
+                  sql`${destinationTagScores.score} DESC NULLS LAST`,
+                  sql`${destinations.name} COLLATE "und-x-icu" ASC`,
+                  asc(destinations.id),
+                ]
+              : search
               ? [
                   // Exact matches first, then prefix matches, then other matches.
                   sql`CASE
@@ -150,8 +200,38 @@ export async function destinationsListRoutes(app: FastifyInstance) {
         countQuery.where(whereCondition),
       ]);
 
+      // Fetch selected scores once for this page, without multiplying list rows
+      // or changing pagination when a destination has several category scores.
+      const scoreRows = rows.length > 0 && requestedSlugs.length > 0
+        ? await db
+            .select({
+              destinationId: destinationTagScores.destinationId,
+              slug: tags.slug,
+              score: destinationTagScores.score,
+            })
+            .from(destinationTagScores)
+            .innerJoin(tags, eq(destinationTagScores.tagId, tags.id))
+            .where(and(
+              inArray(destinationTagScores.destinationId, rows.map(({ id }) => id)),
+              inArray(tags.slug, requestedSlugs),
+            ))
+        : [];
+
+      const scoresByDestination = new Map<number, Record<string, number | null>>();
+      for (const row of rows) {
+        scoresByDestination.set(row.id, Object.fromEntries(
+          requestedSlugs.map((slug) => [slug, null]),
+        ));
+      }
+      for (const { destinationId, slug, score } of scoreRows) {
+        scoresByDestination.get(destinationId)![slug] = score;
+      }
+
       return {
-        data: rows,
+        data: rows.map((row) => ({
+          ...row,
+          scores: scoresByDestination.get(row.id)!,
+        })),
         pagination: {
           page,
           limit,

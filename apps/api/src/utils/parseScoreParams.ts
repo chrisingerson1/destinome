@@ -3,25 +3,41 @@ export type ScoreFilter = {
   min: number;
 };
 
+export class InvalidScoreFilterError extends Error {}
+
 export function parseScoreParams(param: string | undefined): ScoreFilter[] {
-  if (!param) {
+  if (param === undefined || param === "") {
     return [];
+  }
+
+  if (typeof param !== "string") {
+    throw new InvalidScoreFilterError("Scores must be a comma-separated string");
   }
 
   return param
     .split(",")
     .map((value) => value.trim())
-    .filter(Boolean)
     .map((value) => {
-      const [slug, minValue] = value.split(":");
+      const parts = value.split(":");
+      const slug = parts[0]?.trim().toLowerCase();
+      const minValue = parts[1]?.trim();
       const min = Number(minValue);
 
-      if (!slug || !Number.isFinite(min) || min < 0 || min > 10) {
-        throw new Error(`Invalid score filter: ${value}`);
+      if (
+        parts.length !== 2 ||
+        !slug ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
+        !minValue ||
+        !/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(minValue) ||
+        !Number.isFinite(min) ||
+        min < 0 ||
+        min > 10
+      ) {
+        throw new InvalidScoreFilterError(`Invalid score filter: ${value}`);
       }
 
       return {
-        slug: slug.toLowerCase(),
+        slug,
         min,
       };
     });
