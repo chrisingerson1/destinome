@@ -4,9 +4,13 @@ import type { DestinationDetail } from "../../types/destination";
 
 type DestinationHeroProps = {
   destination: DestinationDetail;
+  backTo?: string;
 };
 
-export const DestinationHero = ({ destination }: DestinationHeroProps) => {
+export const DestinationHero = ({
+  destination,
+  backTo = "/map",
+}: DestinationHeroProps) => {
   const overallScore = destination.scores.find(
     (score) => score.slug === "overall",
   );
@@ -24,7 +28,7 @@ export const DestinationHero = ({ destination }: DestinationHeroProps) => {
       {/* Content */}
       <div className="relative flex min-h-100 flex-col justify-between p-8 md:p-12">
         <Link
-          to="/map"
+          to={backTo}
           className="w-fit text-sm text-slate-300 transition hover:text-white"
         >
           ← Back to map

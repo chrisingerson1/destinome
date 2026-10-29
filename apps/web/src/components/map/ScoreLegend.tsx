@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
-import { SCORE_TIERS, SCORE_LEGEND_ORDER } from "../../config/scoreTiers";
+import { SCORE_TIERS, SCORE_LEGEND_ORDER, getScoreTier } from "../../config/scoreTiers";
+import type { ScoreFilter } from "../../lib/discovery";
 
 type ScoreLegendProps = {
   expanded: boolean;
   onToggle: () => void;
   minimumScore: number | null;
   onMinimumScoreChange: (score: number | null) => void;
-  totalCount: number;
-  matchingCount: number;
+  activeFilters: readonly ScoreFilter[];
+  formatCategoryLabel: (category: string) => string;
+  onClearFilter: (slug: string) => void;
+  onClearFilters: () => void;
 };
 
 type TooltipState = {
@@ -25,10 +28,14 @@ export const ScoreLegend = ({
   onToggle,
   minimumScore,
   onMinimumScoreChange,
-  totalCount,
-  matchingCount,
+  activeFilters,
+  formatCategoryLabel,
+  onClearFilter,
+  onClearFilters,
 }: ScoreLegendProps) => {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const activeFilterCount = activeFilters.length;
 
   const tiers = SCORE_LEGEND_ORDER.filter((tierKey) => tierKey !== "unrated");
 
@@ -80,6 +87,7 @@ export const ScoreLegend = ({
         <div
           id="globe-score-legend"
           aria-hidden={!expanded}
+          inert={!expanded}
           className={`grid transition-[grid-template-rows,opacity] duration-200 ease-in-out ${
             expanded
               ? "grid-rows-[1fr] opacity-100"
@@ -131,36 +139,74 @@ export const ScoreLegend = ({
               })}
             </div>
 
-            {/* Minimum score display and clear button */}
-            <div className="flex items-center justify-between gap-2 px-4 pb-3">
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-xs text-slate-400">
-                  {minimumScore === null
-                    ? "Showing all destinations"
-                    : minimumScore === 0
-                      ? "Showing rated destinations"
-                      : `Showing scores ≥ ${minimumScore.toFixed(1)}`}
-                </span>
-
-                <span className="text-xs font-medium tabular-nums text-slate-200">
-                  {totalCount === 0
-                    ? "Loading destinations..."
-                    : minimumScore === null
-                      ? `${totalCount.toLocaleString()} destinations`
-                      : `${matchingCount.toLocaleString()} of ${totalCount.toLocaleString()} destinations`}
-                </span>
-              </div>
-
-              {minimumScore !== null && (
-                <button
-                  type="button"
-                  onClick={() => onMinimumScoreChange(null)}
-                  className="shrink-0 cursor-pointer text-xs text-slate-400 transition-colors hover:text-white"
+            {activeFilterCount > 0 && (
+              <section className="border-t border-white/10 text-xs text-slate-300">
+                <div className="flex items-center justify-between gap-2 px-4 py-3">
+                  <button
+                    type="button"
+                    aria-expanded={filtersExpanded}
+                    aria-controls="globe-active-filters"
+                    onClick={() => setFiltersExpanded((current) => !current)}
+                    className="flex min-w-0 cursor-pointer items-center gap-2 rounded-sm text-left hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                  >
+                    <span>
+                      {activeFilterCount} category {activeFilterCount === 1 ? "filter" : "filters"} active
+                    </span>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`size-3.5 shrink-0 transition-transform ${filtersExpanded ? "rotate-180" : ""}`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClearFilters}
+                    className="shrink-0 cursor-pointer rounded-sm hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                <ul
+                  id="globe-active-filters"
+                  hidden={!filtersExpanded}
+                  className="max-h-48 divide-y divide-white/10 overflow-y-auto overscroll-contain border-t border-white/10"
                 >
-                  Clear
-                </button>
-              )}
-            </div>
+                  {activeFilters.map(({ slug, min }) => {
+                    const tier = SCORE_TIERS[getScoreTier(min)];
+                    return (
+                      <li key={slug} className="flex items-center justify-between gap-3 px-4 py-3">
+                        <span className="min-w-0">
+                          <span className="block text-slate-100">{formatCategoryLabel(slug)}</span>
+                          <span className="mt-1 flex items-center gap-2 text-slate-400">
+                            <span
+                              aria-hidden="true"
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: tier.color }}
+                            />
+                            {tier.label}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Clear ${formatCategoryLabel(slug)} filter`}
+                          onClick={() => onClearFilter(slug)}
+                          className="shrink-0 cursor-pointer rounded-sm text-slate-400 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                        >
+                          Clear
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
           </div>
         </div>
       </div>

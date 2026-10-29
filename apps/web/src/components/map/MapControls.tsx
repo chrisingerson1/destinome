@@ -2,8 +2,10 @@ import { useState } from "react";
 
 import { CategorySelector } from "./CategorySelector";
 import { ScoreLegend } from "./ScoreLegend";
+import { MatchingDestinations, type MatchingDestinationsProps } from "./MatchingDestinations";
+import type { ScoreFilter } from "../../lib/discovery";
 
-type OpenPanel = "category" | "legend" | null;
+type OpenPanel = "category" | "legend" | "matching" | null;
 
 type MapControlsProps = {
   categories: string[];
@@ -12,8 +14,10 @@ type MapControlsProps = {
   formatCategoryLabel: (category: string) => string;
   minimumScore: number | null;
   onMinimumScoreChange: (score: number | null) => void;
-  totalCount: number;
-  matchingCount: number;
+  activeFilters: readonly ScoreFilter[];
+  onClearFilter: (slug: string) => void;
+  onClearFilters: () => void;
+  matchingResults: MatchingDestinationsProps;
   loading?: boolean;
   error?: boolean;
 };
@@ -25,8 +29,10 @@ export const MapControls = ({
   formatCategoryLabel,
   minimumScore,
   onMinimumScoreChange,
-  totalCount,
-  matchingCount,
+  activeFilters,
+  onClearFilter,
+  onClearFilters,
+  matchingResults,
   loading = false,
   error = false,
 }: MapControlsProps) => {
@@ -42,7 +48,7 @@ export const MapControls = ({
   };
 
   return (
-    <div className="pointer-events-none absolute bottom-5 left-5 z-20 flex w-[280px] max-w-[calc(100vw-40px)] flex-col gap-3">
+    <div className="pointer-events-none absolute bottom-5 left-5 z-20 flex max-h-[calc(100dvh-7rem)] w-[280px] max-w-[calc(100vw-40px)] flex-col gap-3 overflow-y-auto overscroll-contain">
       <div className="pointer-events-auto w-full">
         <CategorySelector
           categories={categories}
@@ -62,8 +68,18 @@ export const MapControls = ({
           onToggle={() => togglePanel("legend")}
           minimumScore={minimumScore}
           onMinimumScoreChange={onMinimumScoreChange}
-          totalCount={totalCount}
-          matchingCount={matchingCount}
+          activeFilters={activeFilters}
+          formatCategoryLabel={formatCategoryLabel}
+          onClearFilter={onClearFilter}
+          onClearFilters={onClearFilters}
+        />
+      </div>
+
+      <div className="pointer-events-auto w-full">
+        <MatchingDestinations
+          {...matchingResults}
+          expanded={openPanel === "matching"}
+          onToggle={() => togglePanel("matching")}
         />
       </div>
     </div>

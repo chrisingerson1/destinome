@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router";
 
@@ -14,10 +14,20 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   getMapDestinations,
   getMapDestinationScores,
-  type DestinationSearchResult,
 } from "../../lib/destinations";
 
 import type { MapDestination } from "../../types/destination";
+import {
+  DEFAULT_MAP_VIEW,
+  destinationHref,
+  discoveryHref,
+  mapViewKey,
+  matchesScoreFilters,
+  rankedMapDestinations,
+  updateDiscoveryParams,
+  type MapView,
+} from "../../lib/discovery";
+import { useDiscoveryState } from "../../lib/useDiscoveryState";
 
 import {
   createPushpinLayer,
@@ -33,8 +43,6 @@ const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
 
 const MAP_STYLE = `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${MAPTILER_KEY}`;
 
-const DEFAULT_CENTER: [number, number] = [0, 35];
-const DEFAULT_ZOOM = 2.5;
 const HOME_TRANSITION_START_ZOOM = -1.5;
 
 const CITY_SEARCH_ZOOM = 10;
@@ -60,6 +68,17 @@ const getCategoryLabel = (category: string): string => {
 const getScoreLabel = (score: number | null): string =>
   score === null ? "Unrated" : score.toFixed(2);
 
+const readMapView = (map: MapLibreMap): MapView => {
+  const center = map.getCenter().wrap();
+  return {
+    longitude: center.lng,
+    latitude: center.lat,
+    zoom: map.getZoom(),
+    bearing: map.getBearing(),
+    pitch: map.getPitch(),
+  };
+};
+
 // -----------------------------------------------------------------------------
 // Globe
 // -----------------------------------------------------------------------------
@@ -67,17 +86,20 @@ const getScoreLabel = (score: number | null): string =>
 export const Globe = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const animateFromHome = Boolean(
-    (location.state as { fromHome?: boolean } | null)?.fromHome,
+  const [animateFromHome] = useState(() =>
+    Boolean((location.state as { fromHome?: boolean } | null)?.fromHome),
   );
+  const { discovery, params, updateDiscovery } = useDiscoveryState();
+  const { category: selectedCategory, filters } = discovery;
+  const minimumScore =
+    filters.find(({ slug }) => slug === selectedCategory)?.min ?? null;
 
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
 
   const [mapDestinations, setMapDestinations] = useState<MapDestination[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("overall");
-  const [minimumScore, setMinimumScore] = useState<number | null>(null);
+  const [destinationsLoaded, setDestinationsLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(() =>
     MAPTILER_KEY ? null : "Missing VITE_MAPTILER_KEY",
   );
@@ -92,17 +114,26 @@ export const Globe = () => {
   const hoverPopupRef = useRef<Popup | null>(null);
   const detailPopupRef = useRef<Popup | null>(null);
   const destinationsBySlugRef = useRef(new Map<string, MapDestination>());
-  const minimumScoreRef = useRef(minimumScore);
+  const matchingIdsRef = useRef<ReadonlySet<number> | null>(null);
+  const initialViewRef = useRef(discovery.view);
+  const urlViewKey = discovery.view ? mapViewKey(discovery.view) : "";
+  const lastUrlViewKeyRef = useRef(urlViewKey);
+  const restoringViewRef = useRef(false);
 
-  useEffect(() => {
-    minimumScoreRef.current = minimumScore;
+  const saveMapView = useEffectEvent((map: MapLibreMap) => {
+    if (!restoringViewRef.current) {
+      const view = readMapView(map);
+      if (mapViewKey(view) !== urlViewKey) updateDiscovery({ view }, true);
+    }
+  });
 
-    pinLayerRef.current?.setMinimumScore(minimumScore);
-
-    // Dismiss any hover tooltip from the previous filter.
-    hoverPopupRef.current?.remove();
-    hoverPopupRef.current = null;
-  }, [minimumScore]);
+  const openDestination = useEffectEvent((slug: string, map: MapLibreMap) => {
+    const view = readMapView(map);
+    const returnTo = discoveryHref(updateDiscoveryParams(params, { view }));
+    // Save the exact camera position even if the traveler opens a moving pin.
+    updateDiscovery({ view }, true);
+    navigate(destinationHref(slug, returnTo));
+  });
 
   // ---------------------------------------------------------------------------
   // Category scores
@@ -112,6 +143,7 @@ export const Globe = () => {
     data: destinationScores,
     isPending: scoresLoading,
     isError: scoresError,
+    refetch: refetchScores,
   } = useQuery({
     queryKey: ["destinations", "map", "scores"],
     queryFn: ({ signal }) => getMapDestinationScores(signal),
@@ -145,21 +177,36 @@ export const Globe = () => {
     return scores;
   }, [destinationScores, selectedCategory]);
 
-  const matchingDestinationCount = useMemo(() => {
-    if (minimumScore === null) {
-      return mapDestinations.length;
-    }
+  const matchingDestinationIds = useMemo(() => {
+    if (filters.length === 0) return null;
+    const scoresById = new Map(
+      destinationScores?.map(({ id, scores }) => [id, scores]),
+    );
+    return new Set(
+      mapDestinations
+        .filter((destination) => {
+          const scores = scoresById.get(destination.id);
+          return matchesScoreFilters(filters, {
+            ...scores,
+            overall: scores?.overall ?? destination.overallScore,
+          });
+        })
+        .map(({ id }) => id),
+    );
+  }, [mapDestinations, destinationScores, filters]);
+  const matchingDestinations = useMemo(
+    () => rankedMapDestinations(mapDestinations, matchingDestinationIds),
+    [mapDestinations, matchingDestinationIds],
+  );
 
-    return mapDestinations.reduce((count, destination) => {
-      const score = activeScoreMap.has(destination.id)
-        ? (activeScoreMap.get(destination.id) ?? null)
-        : selectedCategory === "overall"
-          ? destination.overallScore
-          : null;
-
-      return count + (score !== null && score >= minimumScore ? 1 : 0);
-    }, 0);
-  }, [mapDestinations, activeScoreMap, selectedCategory, minimumScore]);
+  useEffect(() => {
+    matchingIdsRef.current = matchingDestinationIds;
+    pinLayerRef.current?.setMatchingDestinationIds(matchingDestinationIds);
+    hoverPopupRef.current?.remove();
+    hoverPopupRef.current = null;
+    detailPopupRef.current?.remove();
+    detailPopupRef.current = null;
+  }, [matchingDestinationIds]);
 
   const parentNamesBySlug = useMemo(() => {
     const destinationsById = new Map(
@@ -230,17 +277,22 @@ export const Globe = () => {
     const controller = new AbortController();
 
     let disposed = false;
+    const initialView = initialViewRef.current ?? DEFAULT_MAP_VIEW;
+    const playHomeAnimation =
+      animateFromHome && initialViewRef.current === null;
 
     const map = new MapLibreMap({
       container,
       style: MAP_STYLE,
-      center: DEFAULT_CENTER,
-      zoom: animateFromHome ? HOME_TRANSITION_START_ZOOM : DEFAULT_ZOOM,
-      pitch: 0,
-      bearing: 0,
+      center: [initialView.longitude, initialView.latitude],
+      zoom: playHomeAnimation ? HOME_TRANSITION_START_ZOOM : initialView.zoom,
+      pitch: initialView.pitch,
+      bearing: initialView.bearing,
     });
 
     mapRef.current = map;
+    const onMoveEnd = () => saveMapView(map);
+    map.on("moveend", onMoveEnd);
 
     map.addControl(
       new NavigationControl({
@@ -260,13 +312,13 @@ export const Globe = () => {
       map.setProjection({ type: "globe" });
     });
 
-    if (animateFromHome) {
+    if (playHomeAnimation) {
       map.once("load", () => {
         if (disposed) return;
 
         map.easeTo({
-          center: DEFAULT_CENTER,
-          zoom: DEFAULT_ZOOM,
+          center: [initialView.longitude, initialView.latitude],
+          zoom: initialView.zoom,
           duration: 1800,
           easing: (progress) => 1 - Math.pow(1 - progress, 3),
           essential: true,
@@ -347,7 +399,7 @@ export const Globe = () => {
       exploreButton.textContent = "Explore Destination →";
 
       exploreButton.addEventListener("click", () => {
-        navigate(`/destination/${destination.slug}`);
+        openDestination(destination.slug, map);
       });
 
       content.append(title, scoreContainer, exploreButton);
@@ -504,6 +556,7 @@ export const Globe = () => {
         );
 
         setMapDestinations(destinations);
+        setDestinationsLoaded(true);
 
         // Only create the layer once.
         const layer = createPushpinLayer(destinations);
@@ -511,7 +564,7 @@ export const Globe = () => {
 
         // The handlers and scoring effect access this same instance.
         pinLayerRef.current = layer;
-        layer.setMinimumScore(minimumScoreRef.current);
+        layer.setMatchingDestinationIds(matchingIdsRef.current);
 
         // Category scores may have loaded before map destinations.
         if (scoresLoadedRef.current) {
@@ -536,7 +589,7 @@ export const Globe = () => {
     map.once("load", () => {
       if (disposed) return;
 
-      if (animateFromHome) {
+      if (playHomeAnimation) {
         map.once("moveend", () => {
           if (!disposed) {
             void loadDestinations();
@@ -562,6 +615,7 @@ export const Globe = () => {
 
       map.off("mousemove", onMouseMove);
       map.off("click", onClick);
+      map.off("moveend", onMoveEnd);
 
       map.getCanvas().removeEventListener("mouseleave", onMouseLeave);
 
@@ -575,13 +629,35 @@ export const Globe = () => {
 
       map.remove();
     };
-  }, [animateFromHome, navigate]);
+  }, [animateFromHome]);
+
+  // Back/Forward changes the camera without creating a new history entry.
+  useEffect(() => {
+    if (urlViewKey === lastUrlViewKeyRef.current) return;
+    lastUrlViewKeyRef.current = urlViewKey;
+    const map = mapRef.current;
+    if (!map) return;
+    const view = discovery.view ?? DEFAULT_MAP_VIEW;
+    if (mapViewKey(readMapView(map)) === mapViewKey(view)) return;
+    restoringViewRef.current = true;
+    try {
+      map.stop();
+      map.jumpTo({
+        center: [view.longitude, view.latitude],
+        zoom: view.zoom,
+        bearing: view.bearing,
+        pitch: view.pitch,
+      });
+    } finally {
+      restoringViewRef.current = false;
+    }
+  }, [urlViewKey, discovery.view]);
 
   // ---------------------------------------------------------------------------
   // Destination search
   // ---------------------------------------------------------------------------
 
-  const handleSearchSelect = (result: DestinationSearchResult) => {
+  const handleDestinationSelect = (result: Pick<MapDestination, "slug">) => {
     const map = mapRef.current;
 
     const destination = destinationsBySlugRef.current.get(result.slug);
@@ -624,7 +700,7 @@ export const Globe = () => {
       />
 
       <DestinationSearch
-        onSelect={handleSearchSelect}
+        onSelect={handleDestinationSelect}
         scoresBySlug={scoresBySlug}
         parentNamesBySlug={parentNamesBySlug}
       />
@@ -632,12 +708,30 @@ export const Globe = () => {
       <MapControls
         categories={availableCategories}
         selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        onCategoryChange={(category) => updateDiscovery({ category })}
         formatCategoryLabel={getCategoryLabel}
         minimumScore={minimumScore}
-        onMinimumScoreChange={setMinimumScore}
-        totalCount={mapDestinations.length}
-        matchingCount={matchingDestinationCount}
+        onMinimumScoreChange={(min) =>
+          updateDiscovery({
+            filters: [
+              ...filters.filter(({ slug }) => slug !== selectedCategory),
+              ...(min === null ? [] : [{ slug: selectedCategory, min }]),
+            ],
+          })
+        }
+        activeFilters={filters}
+        onClearFilter={(slug) => updateDiscovery({
+          filters: filters.filter((filter) => filter.slug !== slug),
+        })}
+        onClearFilters={() => updateDiscovery({ filters: [] })}
+        matchingResults={{
+          destinations: matchingDestinations,
+          parentNamesBySlug,
+          onSelect: handleDestinationSelect,
+          loading: scoresLoading || !destinationsLoaded,
+          error: scoresError,
+          onRetry: () => { void refetchScores(); },
+        }}
         loading={scoresLoading}
         error={scoresError}
       />

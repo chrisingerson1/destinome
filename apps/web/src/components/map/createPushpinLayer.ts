@@ -29,7 +29,7 @@ export type InteractivePushpinLayer = CustomLayerInterface & {
     category: string,
     scores: ReadonlyMap<number, number | null>,
   ) => void;
-  setMinimumScore: (score: number | null) => void;
+  setMatchingDestinationIds: (ids: ReadonlySet<number> | null) => void;
 };
 
 // -----------------------------------------------------------------------------
@@ -199,7 +199,7 @@ export const createPushpinLayer = (
   const appearances = activeScores.map((score) => getPinAppearance(score));
   const renderIndices = pins.map((_, index) => index);
 
-  let minimumScore: number | null = null;
+  let matchingDestinationIds: ReadonlySet<number> | null = null;
 
   // One animation progress value per destination.
   // 1 = fully visible, 0 = completely hidden.
@@ -501,10 +501,9 @@ export const createPushpinLayer = (
       let filterAnimating = false;
 
       for (const index of renderIndices) {
-        const score = activeScores[index];
-
         const passesFilter =
-          minimumScore === null || (score !== null && score >= minimumScore);
+          matchingDestinationIds === null ||
+          matchingDestinationIds.has(pins[index].id);
 
         const targetProgress = passesFilter ? 1 : 0;
         const previousProgress = filterProgress[index];
@@ -746,7 +745,10 @@ export const createPushpinLayer = (
         const score = activeScores[position.index];
 
         // Pins excluded by the active filter cannot be selected.
-        if (minimumScore !== null && (score === null || score < minimumScore)) {
+        if (
+          matchingDestinationIds !== null &&
+          !matchingDestinationIds.has(pins[position.index].id)
+        ) {
           continue;
         }
 
@@ -803,8 +805,8 @@ export const createPushpinLayer = (
       // Request a new frame without rebuilding the layer.
       map?.triggerRepaint();
     },
-    setMinimumScore: (score) => {
-      minimumScore = score;
+    setMatchingDestinationIds: (ids) => {
+      matchingDestinationIds = ids;
 
       // Animate using the existing layer and instance meshes.
       map?.triggerRepaint();

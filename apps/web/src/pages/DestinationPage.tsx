@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 
 import { getDestination } from "../lib/destinations";
+import { discoveryReturnTo } from "../lib/discovery";
 
 import {
   DestinationHero,
@@ -14,6 +15,8 @@ import {
 
 export const DestinationPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [params] = useSearchParams();
+  const returnTo = discoveryReturnTo(params);
 
   const {
     data: destination,
@@ -41,18 +44,23 @@ export const DestinationPage = () => {
     };
   }, [destination?.name]);
 
-  if (isPending) {
-    return <p>Loading destination...</p>;
-  }
-
-  if (isError) {
-    return <p>{error.message}</p>;
+  if (isPending || isError) {
+    return (
+      <main className="min-h-screen bg-slate-950 p-8 text-white">
+        <Link to={returnTo} className="text-sm text-slate-300">
+          ← Back to map
+        </Link>
+        <p className="mt-6">
+          {isError ? error.message : "Loading destination..."}
+        </p>
+      </main>
+    );
   }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-        <DestinationHero destination={destination} />
+        <DestinationHero destination={destination} backTo={returnTo} />
 
         <div className="mt-12 grid gap-12 lg:grid-cols-3">
           {/* Main content */}
@@ -85,7 +93,10 @@ export const DestinationPage = () => {
                   )}
                 </div>
               </div>
-              <ExploreNeighborhoods neighborhoods={destination.neighborhoods} />
+              <ExploreNeighborhoods
+                neighborhoods={destination.neighborhoods}
+                returnTo={returnTo}
+              />
             </div>
           </aside>
         </div>
