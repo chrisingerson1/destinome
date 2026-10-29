@@ -1,4 +1,3 @@
-import slugify from "slugify";
 import { eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
@@ -7,19 +6,17 @@ import { db, pool } from "../db.js";
 import { destinations } from "../schema/destinations.js";
 import { administrativeAreas, countries } from "../schema/geography.js";
 import { destinationTagScores, tags } from "../schema/scoring.js";
+import { destinationBaseSlug, toSlug } from "../utils/slugs.js";
 
 type DestinationForSlug = {
   id: number;
   sourceId: string;
   name: string;
+  parentName: string | null;
   iso2: string;
   adminArea1: string | null;
   overallScore: number | null;
 };
-
-function toSlug(value: string) {
-  return slugify(value, { lower: true, strict: true, trim: true });
-}
 
 function compareDestinations(a: DestinationForSlug, b: DestinationForSlug) {
   const scoreDifference = (b.overallScore ?? -1) - (a.overallScore ?? -1);
@@ -44,12 +41,14 @@ async function generateSlugs() {
 
   const currentAdminArea = alias(administrativeAreas, "current_admin_area");
   const parentAdminArea = alias(administrativeAreas, "parent_admin_area");
+  const parentDestination = alias(destinations, "parent_destination");
 
   const destinationRows = await db
     .select({
       id: destinations.id,
       sourceId: destinations.sourceId,
       name: destinations.name,
+      parentName: parentDestination.name,
 
       iso2: countries.iso2,
 
@@ -59,6 +58,10 @@ async function generateSlugs() {
     })
     .from(destinations)
     .innerJoin(countries, eq(countries.id, destinations.countryId))
+    .leftJoin(
+      parentDestination,
+      eq(parentDestination.id, destinations.parentDestinationId),
+    )
     .leftJoin(
       currentAdminArea,
       eq(currentAdminArea.id, destinations.administrativeAreaId),
@@ -93,6 +96,7 @@ async function generateSlugs() {
       id: row.id,
       sourceId: row.sourceId,
       name: row.name,
+      parentName: row.parentName,
       iso2: row.iso2?.toLowerCase(),
       adminArea1,
       overallScore: overallScoreByDestinationId.get(row.id) ?? null,
@@ -102,7 +106,7 @@ async function generateSlugs() {
   const groups = new Map<string, DestinationForSlug[]>();
 
   for (const destination of rows) {
-    const citySlug = toSlug(destination.name);
+    const citySlug = destinationBaseSlug(destination.name, destination.parentName);
     const group = groups.get(citySlug) ?? [];
 
     group.push(destination);

@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "node --import tsx --test tests/*.test.ts",
     "data:check": "tsx src/scripts/check-data.ts",
     "data:generate-slugs": "tsx src/scripts/generate-slugs.ts",
     "data:import": "npm run data:import:destinations && npm run data:import:tag-scores && npm run data:import:monthly-metrics && npm run data:generate-slugs && npm run data:check",
