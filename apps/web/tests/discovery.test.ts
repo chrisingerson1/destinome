@@ -4,7 +4,6 @@ import { createMemoryRouter } from "react-router";
 import {
   destinationHref,
   discoveryHref,
-  discoveryReturnTo,
   discoverySearch,
   mapViewKey,
   matchesScoreFilters,
@@ -178,48 +177,11 @@ test("filters require every category, including rated zero values at a zero mini
   assert.equal(matchesScoreFilters([], {}), true);
 });
 
-test("destination refresh and neighborhood navigation retain the original discovery URL", () => {
-  const mapUrl = discoveryHref(
-    new URLSearchParams(
-      "scores=food:8,nature:7&category=nature&page=2&view=10,35,6,30,40",
-    ),
-  );
-  const destinationUrl = new URL(
-    destinationHref("paris", mapUrl),
-    "https://destinome.test",
-  );
-  const afterRefresh = discoveryReturnTo(destinationUrl.searchParams);
-  assert.equal(afterRefresh, mapUrl);
-  const neighborhoodUrl = new URL(
-    destinationHref("montmartre", afterRefresh),
-    destinationUrl,
-  );
-  assert.equal(discoveryReturnTo(neighborhoodUrl.searchParams), mapUrl);
-  assert.deepEqual(
-    readDiscoveryState(new URL(mapUrl, destinationUrl).searchParams),
-    {
-      filters: [
-        { slug: "food", min: 8 },
-        { slug: "nature", min: 7 },
-      ],
-      category: "nature",
-      page: 2,
-      view: { longitude: 10, latitude: 35, zoom: 6, bearing: 30, pitch: 40 },
-    },
-  );
+test("destination and neighborhood links contain only their slugs", () => {
+  assert.equal(destinationHref("paris"), "/destination/paris");
+  assert.equal(destinationHref("montmartre-paris"), "/destination/montmartre-paris");
 });
 
-test("return links allow only local map URLs and direct destination visits fall back to /map", () => {
-  for (const returnTo of [
-    "https://example.com/map",
-    "//example.com/map",
-    "/map/other",
-    "/map.evil",
-    "javascript:alert(1)",
-  ]) {
-    assert.equal(discoveryReturnTo(new URLSearchParams({ returnTo })), "/map");
-  }
-  assert.equal(discoveryReturnTo(new URLSearchParams()), "/map");
-  assert.equal(destinationHref("paris", "/map"), "/destination/paris");
+test("plain map links do not add an empty query string", () => {
   assert.equal(discoveryHref(new URLSearchParams()), "/map");
 });

@@ -5,7 +5,6 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { getDestination } from "../lib/destinations";
 import {
   destinationHref,
-  discoveryReturnTo,
   discoverySearch,
 } from "../lib/discovery";
 import {
@@ -13,6 +12,7 @@ import {
   updateSecondaryDestination,
 } from "../lib/comparison";
 import { useReadableSearchParams } from "../lib/useReadableSearchParams";
+import { useMapReturnTo } from "../lib/useMapReturnTo";
 import { CompareDestinationSummary } from "../components/compare/CompareDestinationSummary";
 import { ComparisonDestinationSlot } from "../components/compare/ComparisonDestinationSlot";
 
@@ -22,7 +22,7 @@ export const ComparePage = () => {
   const location = useLocation();
   const slug = params.get("destination")?.trim() || undefined;
   const secondarySlug = getSecondaryDestinationSlug(params);
-  const returnTo = discoveryReturnTo(params);
+  const returnTo = useMapReturnTo();
   const {
     data: destination,
     isPending,
@@ -66,7 +66,7 @@ export const ComparePage = () => {
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
         <Link
           to={
-            destination ? destinationHref(destination.slug, returnTo) : returnTo
+            destination ? destinationHref(destination.slug) : returnTo
           }
           className="inline-flex min-h-11 items-center text-sm text-sky-300 transition-colors hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
         >

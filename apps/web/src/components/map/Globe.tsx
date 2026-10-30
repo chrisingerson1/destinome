@@ -28,6 +28,7 @@ import {
   type MapView,
 } from "../../lib/discovery";
 import { useDiscoveryState } from "../../lib/useDiscoveryState";
+import { mapReturnStore } from "../../lib/mapReturn";
 
 import {
   createPushpinLayer,
@@ -129,10 +130,11 @@ export const Globe = () => {
 
   const openDestination = useEffectEvent((slug: string, map: MapLibreMap) => {
     const view = readMapView(map);
-    const returnTo = discoveryHref(updateDiscoveryParams(params, { view }));
+    const returnTo = `${discoveryHref(updateDiscoveryParams(params, { view }))}${location.hash}`;
+    mapReturnStore.save(returnTo);
     // Save the exact camera position even if the traveler opens a moving pin.
     updateDiscovery({ view }, true);
-    navigate(destinationHref(slug, returnTo));
+    navigate(destinationHref(slug));
   });
 
   // ---------------------------------------------------------------------------

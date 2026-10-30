@@ -8,14 +8,12 @@ import type { DestinationDetail } from "../../types/destination";
 
 type ExploreNeighborhoodsProps = {
   neighborhoods: DestinationDetail["neighborhoods"];
-  returnTo?: string;
 };
 
 const INITIAL_VISIBLE_COUNT = 6;
 
 export const ExploreNeighborhoods = ({
   neighborhoods,
-  returnTo = "/map",
 }: ExploreNeighborhoodsProps) => {
   const [showAll, setShowAll] = useState(false);
 
@@ -51,7 +49,7 @@ export const ExploreNeighborhoods = ({
           return (
             <li key={neighborhood.id}>
               <Link
-                to={destinationHref(neighborhood.slug, returnTo)}
+                to={destinationHref(neighborhood.slug)}
                 className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/10"
               >
                 <div className="flex min-w-0 items-center gap-3">

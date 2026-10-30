@@ -36,7 +36,7 @@ export const DestinationHero = ({
             ← Back to map
           </Link>
           <Link
-            to={comparisonHref(destination.slug, backTo)}
+            to={comparisonHref(destination.slug)}
             className="inline-flex min-h-11 items-center justify-center rounded-lg border border-sky-300/60 px-4 py-2 text-sm font-medium text-sky-200 transition-colors hover:bg-sky-300/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
           >
             Compare

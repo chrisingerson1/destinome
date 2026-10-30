@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 
 import { getDestination } from "../lib/destinations";
-import { discoveryReturnTo } from "../lib/discovery";
 import { useReadableSearchParams } from "../lib/useReadableSearchParams";
+import { useMapReturnTo } from "../lib/useMapReturnTo";
 
 import {
   DestinationHero,
@@ -16,8 +16,8 @@ import {
 
 export const DestinationPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const params = useReadableSearchParams();
-  const returnTo = discoveryReturnTo(params);
+  useReadableSearchParams();
+  const returnTo = useMapReturnTo();
 
   const {
     data: destination,
@@ -96,7 +96,6 @@ export const DestinationPage = () => {
               </div>
               <ExploreNeighborhoods
                 neighborhoods={destination.neighborhoods}
-                returnTo={returnTo}
               />
             </div>
           </aside>

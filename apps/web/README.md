@@ -2,11 +2,12 @@
 
 The destination details **Compare** button opens `/compare?destination=<slug>`
 with that destination preloaded using the existing detail query cache. Refreshes
-and shared URLs restore the source destination. Saved discovery settings are
-carried through `returnTo`, including the link back to the source's details page.
-Return URLs display readable slashes, commas, colons, question marks, and equals
-signs. Nested ampersands remain encoded so their map settings stay inside
-`returnTo`; fragments and already-escaped values also retain their meaning.
+and shared URLs restore the source destination. The tab's last map URL is saved
+in `sessionStorage`, including filters, pagination, camera position, and fragment.
+Destination and comparison links do not include `returnTo`. Refreshing retains
+the saved map view; a shared link uses the recipient's own saved map view, falling
+back to `/map` when no map has been saved. Existing `returnTo` links import their
+map settings into storage and remove the parameter without adding a history entry.
 Opening `/compare` directly provides an entry point back to destination discovery.
 The **Compare with** field reuses Globe's destination search. Focus it or open
 its dropdown for suggestions, then type to search; the original destination is
@@ -50,9 +51,10 @@ show their parent name.
 
 Filter changes reset the results page. Filter and color changes create history
 entries; camera movements replace the current entry. Back/Forward restores URL
-settings without recreating the map. Destination URLs carry a local `/map`
-`returnTo` parameter, preserved through destination refreshes and neighborhood
-links. Direct destination visits return to `/map`.
+settings without recreating the map. On destination, neighborhood, and comparison
+pages, Back to map and Explore resume this tab's most recent map view.
+If browser storage is blocked, return navigation still works in memory while
+the app remains open; after a reload it falls back to `/map`.
 
 Malformed URL values fall back to defaults; malformed score entries are ignored.
 Duplicate category minimums use the highest threshold. Unrelated query parameters
@@ -60,7 +62,8 @@ are preserved when discovery settings change.
 
 Run `npm test --workspace=@destinome/web` from the repository root (Node 22.18+
 for native TypeScript test support). These tests cover URL parsing, updates,
-matching rules, and return-link round trips; they do not exercise WebGL rendering.
+matching rules, comparison links, stored map settings, and legacy-link migration;
+they do not exercise WebGL rendering.
 
 Manual smoke check with the API and web dev servers running:
 

@@ -1,8 +1,7 @@
 import { discoverySearch } from "./discovery.ts";
 
-export function comparisonHref(destinationSlug: string, returnTo = "/map"): string {
+export function comparisonHref(destinationSlug: string): string {
   const params = new URLSearchParams({ destination: destinationSlug });
-  if (returnTo !== "/map") params.set("returnTo", returnTo);
   return `/compare${discoverySearch(params)}`;
 }
 
