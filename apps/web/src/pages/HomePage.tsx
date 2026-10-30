@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect } from "react";
+import { preloadGlobe } from "../lib/useGlobeLaunch";
 
 const scoreDimensions = [
   "Food",
@@ -16,16 +16,12 @@ const globeMarkers = [
   { position: "top-[62%] left-[38%]", color: "#F2A34A" },
 ];
 
-let globeModulePromise: Promise<unknown> | undefined;
-
-const preloadGlobe = () => {
-  globeModulePromise ??= import("../components/map/Globe");
-  return globeModulePromise;
+type HomePageProps = {
+  isLaunching: boolean;
+  onViewGlobe: () => void;
 };
 
-export const HomePage = () => {
-  const navigate = useNavigate();
-  const [isLaunching, setIsLaunching] = useState(false);
+export const HomePage = ({ isLaunching, onViewGlobe }: HomePageProps) => {
 
   useEffect(() => {
     const preloadTimeout = window.setTimeout(() => {
@@ -35,44 +31,8 @@ export const HomePage = () => {
     return () => window.clearTimeout(preloadTimeout);
   }, []);
 
-  useEffect(() => {
-    if (!isLaunching) return;
-
-    let cancelled = false;
-    let timeout: number;
-
-    const minimumTransition = new Promise<void>((resolve) => {
-      timeout = window.setTimeout(resolve, 400);
-    });
-
-    void Promise.all([
-      preloadGlobe(),
-      minimumTransition,
-    ]).then(() => {
-      if (!cancelled) {
-        navigate("/map", { state: { fromHome: true } });
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeout);
-    };
-  }, [isLaunching, navigate]);
-
-  const viewGlobe = () => {
-    if (isLaunching) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      navigate("/map");
-      return;
-    }
-
-    setIsLaunching(true);
-  };
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05080f] text-slate-100">
+    <main className="relative min-h-[calc(100dvh-var(--navbar-height))] overflow-hidden bg-[#05080f] text-slate-100">
       <div
         className={`home-stars pointer-events-none inset-0 ${
           isLaunching
@@ -82,18 +42,7 @@ export const HomePage = () => {
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-sky-300/30 to-transparent" />
 
-      <header className="relative z-10 mx-auto flex max-w-7xl items-center px-6 py-6 md:px-10">
-        <Link
-          to="/"
-          className="text-base font-bold tracking-[0.2em] uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400"
-          aria-label="Destinome home"
-        >
-          Destinome
-        </Link>
-
-      </header>
-
-      <section className="relative z-10 mx-auto grid min-h-[calc(100vh-88px)] max-w-7xl items-center gap-14 px-6 py-16 md:px-10 lg:grid-cols-[1fr_0.9fr] lg:gap-20 lg:py-20">
+      <section className="relative z-10 mx-auto grid min-h-[calc(100dvh-var(--navbar-height))] max-w-7xl items-center gap-14 px-6 py-16 md:px-10 lg:grid-cols-[1fr_0.9fr] lg:gap-20 lg:py-20">
         <div className="max-w-2xl">
           <p className="flex items-center gap-3 text-xs font-semibold tracking-[0.2em] text-sky-300 uppercase">
             <span className="h-px w-9 bg-sky-300/70" />
@@ -111,7 +60,7 @@ export const HomePage = () => {
 
           <button
             type="button"
-            onClick={viewGlobe}
+            onClick={onViewGlobe}
             onPointerEnter={() => void preloadGlobe()}
             onFocus={() => void preloadGlobe()}
             disabled={isLaunching}

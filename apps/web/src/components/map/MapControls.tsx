@@ -48,7 +48,7 @@ export const MapControls = ({
   };
 
   return (
-    <div className="pointer-events-none absolute bottom-5 left-5 z-20 flex max-h-[calc(100dvh-7rem)] w-[280px] max-w-[calc(100vw-40px)] flex-col gap-3 overflow-y-auto overscroll-contain">
+    <div className="pointer-events-none absolute bottom-5 left-5 z-20 flex max-h-[calc(100%-7rem)] w-[280px] max-w-[calc(100vw-40px)] flex-col gap-3 overflow-y-auto overscroll-contain">
       <div className="pointer-events-auto w-full">
         <CategorySelector
           categories={categories}

@@ -46,7 +46,7 @@ export const DestinationPage = () => {
 
   if (isPending || isError) {
     return (
-      <main className="min-h-screen bg-slate-950 p-8 text-white">
+      <main className="min-h-[calc(100dvh-var(--navbar-height))] bg-slate-950 p-8 text-white">
         <Link to={returnTo} className="text-sm text-slate-300">
           ← Back to map
         </Link>
@@ -58,7 +58,7 @@ export const DestinationPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-[calc(100dvh-var(--navbar-height))] bg-slate-950 text-white">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
         <DestinationHero destination={destination} backTo={returnTo} />
 

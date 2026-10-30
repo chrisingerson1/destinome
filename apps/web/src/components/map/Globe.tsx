@@ -689,7 +689,7 @@ export const Globe = () => {
 
   return (
     <div
-      className={`relative h-dvh w-full overflow-hidden bg-black ${
+      className={`relative h-full w-full overflow-hidden bg-black ${
         animateFromHome ? "destinome-map-entering" : ""
       }`}
     >

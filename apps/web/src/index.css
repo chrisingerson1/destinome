@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --navbar-height: 4rem;
   font-family: Inter, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
