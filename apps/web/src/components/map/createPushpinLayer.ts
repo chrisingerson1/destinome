@@ -1,8 +1,7 @@
 import {
   MercatorCoordinate,
   type CustomLayerInterface,
-  type Map as MapLibreMap,
-} from "maplibre-gl";
+} from "@maptiler/sdk";
 
 import * as THREE from "three";
 
@@ -177,7 +176,8 @@ export const createPushpinLayer = (
   const scene = new THREE.Scene();
   const camera = new THREE.Camera();
 
-  let map: MapLibreMap;
+  // onAdd receives the SDK's MapLibre base interface, not the SDK subclass type.
+  let map: Parameters<NonNullable<CustomLayerInterface["onAdd"]>>[0];
   let renderer: THREE.WebGLRenderer | null = null;
 
   let neighborhoodAnimationTime = 0;
@@ -355,7 +355,7 @@ export const createPushpinLayer = (
   const headCounts = {} as Record<ScoreTier, number>;
 
   // ---------------------------------------------------------------------------
-  // MapLibre custom layer
+  // SDK custom layer (MapLibre 5.24 projection data matches the fields used here)
   // ---------------------------------------------------------------------------
 
   return {
@@ -721,6 +721,8 @@ export const createPushpinLayer = (
 
     onRemove: () => {
       screenPositions.length = 0;
+
+      for (const mesh of allMeshes) mesh.dispose();
 
       shaftGeometry.dispose();
       headGeometry.dispose();

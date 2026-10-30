@@ -72,6 +72,18 @@ for native TypeScript test support). These tests cover URL parsing, updates,
 matching rules, comparison links, stored map settings, and legacy-link migration;
 they do not exercise WebGL rendering.
 
+When the map fails to load, or the configured provider blocks requests with an
+authorization or quota error, the globe shows **Map temporarily unavailable**
+and hides its map controls. **Continue without Satellite Imagery** in satellite
+mode (or **Continue without basemap** in OpenFreeMap mode) dismisses the alert and starts
+a minimal globe using a local background style with no remote tiles, labels,
+fonts, or sprites. The same destination pins, filters, search, and camera controls
+remain available, with a small notice that satellite imagery is unavailable.
+The current camera and discovery URL are preserved. This also works without a
+MapTiler key. If the minimal map fails, **Try again** retries the minimal map
+rather than contacting MapTiler. The fallback applies to the current map visit;
+the shared navbar remains available throughout.
+
 Manual smoke check with the API and web dev servers running:
 
 1. Open `/map?scores=food:8,nature:7&category=nature&page=2&view=-71,42,8,30,40`.
@@ -79,6 +91,129 @@ Manual smoke check with the API and web dev servers running:
 3. Change color/filter settings, pan the map, then use Back/Forward to restore settings.
 4. Open a pin's destination, refresh, visit a neighborhood, and use Back to map.
    Confirm the original filters, page, and camera return.
+
+## MapTiler SDK migration and usage verification
+
+The globe uses **`@maptiler/sdk` 4.2.0**, whose MapLibre core is **5.24.0**
+(previously the app used MapLibre 6.14.0 directly). In production, `Globe.tsx` sets
+`config.apiKey` from the existing `apps/web/.env.local` `VITE_MAPTILER_KEY` and
+explicitly sets **`config.session = true`** before constructing the SDK `Map`.
+The style shorthand `hybrid-v4` selects the same satellite style as before.
+Style, source, tile, sprite, and glyph loading goes through the SDK's request
+pipeline; MapTiler imagery is always loaded through the SDK `Map`. Development
+defaults to OpenFreeMap, as described below. MapTiler documents the `mtsid`
+parameter and session billing in
+its [SDK configuration reference](https://docs.maptiler.com/sdk-js/api-reference/classes/SdkConfig/)
+and [sessions versus requests guide](https://docs.maptiler.com/guides/account/sessions-vs-requests/).
+
+The custom Three.js layer imports its coordinates and interfaces from the SDK.
+Both core versions expose `defaultProjectionData.mainMatrix`,
+`projectionTransition`, and `clippingPlane` with the same meanings; the 5.24
+custom-layer matrices retain double precision for floating-origin transforms.
+The layer types its map using the `onAdd` base interface, since the callback
+does not promise SDK-specific methods. The projection calculations, shared
+WebGL context, instancing, pin appearance, hit testing, and animation timing
+are unchanged. Removal now explicitly disposes instanced-mesh buffers as well
+as the existing geometry, materials, and renderer disposal.
+
+The old public MapLibre 6 worker and shared module are removed. The SDK uses its
+own core's bundled worker, avoiding a mismatched worker protocol. SDK navigation
+and geolocation controls are disabled; the existing navigation control is added
+once using the SDK's original MapLibre control export. Style label language,
+responsive attribution behavior, camera settings, CSS, and popup layout are
+preserved; SDK space and halo effects are disabled.
+
+Initialization is deferred one timer tick so Strict Mode's cancelled first
+effect creates no map or provider requests. Category, score, filter, and URL
+changes keep the current map/layer. Unmount cancels pending startup and removes
+the map. Constructor failures and a 20-second initial-load timeout show the
+existing fallback prompt. Fatal provider failures dispose the map and abort
+outstanding work, including the SDK's automatic style fallback; there is no
+application retry loop. Continuing starts the existing local minimal globe
+with the saved camera. A failed minimal attempt retries only that local style.
+
+SDK telemetry is disabled to avoid metrics requests from fallback or removed
+maps. SDK persistent caching is also disabled: in 4.2.0 its cache protocols do
+not reject non-success HTTP responses with their status, which would hide late
+authorization/quota failures from the fallback handler. Normal browser HTTP
+caching remains enabled, matching the previous integration. This cache choice
+does not disable sessions.
+
+Development (`npm run dev --workspace=@destinome/web`) defaults to OpenFreeMap's
+[Liberty vector basemap](https://openfreemap.org/quick_start/). No MapTiler key
+is required, even when `VITE_MAPTILER_KEY` is absent. The existing globe projection,
+Three.js pins, score filters, search, and camera controls use the same MapLibre
+5.24 core, exported by the installed SDK as `MapMLGL`; no second mapping library
+is installed. Both OpenFreeMap and local minimal maps use this base map class
+so SDK metadata requests, metrics, and automatic MapTiler style fallback cannot
+contact MapTiler. OpenFreeMap's source attribution remains visible through the
+existing attribution control. Its tiles, fonts, and sprites are hosted by
+OpenFreeMap; the style includes no MapTiler resources.
+
+Optional development overrides (restart Vite after changing):
+
+```sh
+# Exercise production satellite imagery/session tracking with the configured key:
+VITE_MAP_BASEMAP=maptiler npm run dev --workspace=@destinome/web
+
+# Use the local globe without remote basemap traffic:
+VITE_MAP_BASEMAP=minimal npm run dev --workspace=@destinome/web
+```
+
+Unset `VITE_MAP_BASEMAP` (or use `openfreemap`) to restore the development
+default. Unknown values also select OpenFreeMap in development. Production
+builds and `vite preview` always use session-enabled MapTiler Hybrid, regardless
+of this variable. Keep `VITE_MAPTILER_KEY` configured for production builds.
+
+Development smoke check: open `/map` with no MapTiler key and inspect Network.
+Basemap style/source/tile/font/sprite requests should use `tiles.openfreemap.org`,
+with no `api.maptiler.com` requests. Exercise pins, filters, search, and globe
+zoom transitions; confirm OpenFreeMap/OpenMapTiles/OpenStreetMap attribution is
+visible. Blocking OpenFreeMap should expose the local fallback action, whose
+retry stays local.
+
+Validation: web TypeScript/build, ESLint, and all 44 web tests
+passed, as did the API typecheck. Tests exercise error classification, local
+style independence, Strict Mode startup cancellation and cleanup, and the
+installed SDK's real request transform, development defaults/overrides, and the
+production provider guard. The request-transform check confirms style, tile, and
+font URLs receive the same nonempty `mtsid` and API key while external URLs
+are unchanged; it does not construct a WebGL map. A single live style probe
+using this transform attached `mtsid` and returned **HTTP 403** with the
+configured key. This confirms a provider access block, not its specific cause;
+quota exhaustion was reported before the migration. Browser automation was
+unavailable, so rendering, globe/Mercator transitions, all pins, popup hit
+testing/navigation, recoloring/filter animations, neighborhood reveal, search
+fly-to, control appearance, and fallback interaction remain browser smoke
+checks. An OpenFreeMap Liberty style probe returned HTTP 200 and confirmed its
+sources, fonts, and sprites point to OpenFreeMap without MapTiler dependencies;
+this does not verify WebGL rendering. Actual session accounting cannot be confirmed until successful usage
+is visible in the account. The build reports a large-chunk warning.
+
+After provider access is restored:
+
+1. Open `/map` in a production build/preview or with the `maptiler` development
+   override above. In DevTools Network, filter for
+   `api.maptiler.com`. Inspect the Hybrid style and uncached tile/glyph/sprite
+   requests: they should include a nonempty `mtsid` that remains stable while
+   panning and zooming on that page. The SDK can also make a source metadata
+   request to determine logo requirements; not every ancillary SDK request is
+   proof of billable map traffic. Avoid sharing URLs containing the API key.
+2. Confirm the imagery, globe-to-Mercator transition, pins, hover previews,
+   clicks/detail navigation, search fly-to, category colors, animated score
+   filtering/counts, and neighborhood reveal above zoom 11. Verify there is
+   one navigation control and one canvas, including in development Strict Mode.
+   Changing scores or categories should not request another basemap style.
+3. Block MapTiler requests in DevTools and reload to exercise the error prompt;
+   also check a slow/unresponsive provider reaches the timeout. Continue without
+   satellite imagery and repeat the pin/search/filter checks. The fallback must
+   not make MapTiler requests, including when retrying a failed minimal map.
+4. In [MapTiler Cloud Analytics](https://cloud.maptiler.com/analytics/), select
+   the relevant API key/date range where available. Check the **map sessions**
+   usage for a small controlled visit after analytics processing. Pan/zoom
+   during that visit and confirm usage is attributed to sessions rather than
+   independently billable tile requests. Historical request usage remains;
+   SDK migration does not reset exhausted limits or change account settings.
 
 ## Vite template notes
 
