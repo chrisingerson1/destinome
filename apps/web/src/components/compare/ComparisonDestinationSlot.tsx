@@ -1,28 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getDestination, type DestinationSearchResult } from "../../lib/destinations";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { DestinationSearchResult } from "../../lib/destinations";
+import type { DestinationDetail } from "../../types/destination";
 import { DestinationSearch } from "../DestinationSearch";
 import { CompareDestinationSummary } from "./CompareDestinationSummary";
 
 type ComparisonDestinationSlotProps = {
   primarySlug: string;
   selectedSlug?: string;
+  query: UseQueryResult<DestinationDetail, Error>;
   onSelect: (destination: DestinationSearchResult) => void;
   onRemove: () => void;
 };
 
 const actionClass = "cursor-pointer rounded-sm text-xs text-slate-400 hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300";
 
-export const ComparisonDestinationSlot = ({ primarySlug, selectedSlug, onSelect, onRemove }: ComparisonDestinationSlotProps) => {
+export const ComparisonDestinationSlot = ({ primarySlug, selectedSlug, query, onSelect, onRemove }: ComparisonDestinationSlotProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const { data, isPending, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ["destination", selectedSlug],
-    queryFn: ({ signal }) => {
-      if (!selectedSlug) throw new Error("Missing comparison destination");
-      return getDestination(selectedSlug, signal);
-    },
-    enabled: Boolean(selectedSlug),
-  });
+  const { data, isPending, isError, error, isFetching, refetch } = query;
 
   const actions = (
     <div className="flex h-8 shrink-0 gap-3">

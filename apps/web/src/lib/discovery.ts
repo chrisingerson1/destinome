@@ -145,7 +145,7 @@ export function discoverySearch(params: URLSearchParams): string {
   // Keep discovery separators readable without decoding query delimiters or
   // changing the encoding of unrelated parameters.
   const query = params.toString().replace(
-    /(^|&)(scores|view)=([^&]*)/g,
+    /(^|&)(scores|view|categories)=([^&]*)/g,
     (_match, separator: string, key: string, value: string) =>
       `${separator}${key}=${value.replace(/%3A/gi, ":").replace(/%2C/gi, ",")}`,
   );

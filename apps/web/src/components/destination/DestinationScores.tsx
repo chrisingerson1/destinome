@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 
 import { getScoreTier, SCORE_TIERS } from "../../config/scoreTiers";
+import { scoreEmojis } from "../../config/scoreEmojis";
 import type { DestinationScore } from "../../types";
 
 type DestinationScoresProps = {
@@ -8,42 +9,6 @@ type DestinationScoresProps = {
 };
 
 const SUMMARY_SCORE_COUNT = 6;
-
-const scoreEmojis: Record<string, string> = {
-  activities: "🎯",
-  architecture: "🏛️",
-  beaches: "🏖️",
-  boating: "⛵",
-  budget: "💰",
-  camping: "⛺",
-  culture: "🎭",
-  cycling: "🚲",
-  "disability-friendly": "♿",
-  diving: "🤿",
-  food: "🍽️",
-  gambling: "🎰",
-  golf: "⛳",
-  hiking: "🥾",
-  "kid-friendly": "🧸",
-  "lgbt-friendly": "🏳️‍🌈",
-  museums: "🖼️",
-  nature: "🌿",
-  nightlife: "🪩",
-  overall: "⭐",
-  "photographic-hotspots": "📸",
-  "public-transit": "🚇",
-  romantic: "💕",
-  safety: "🛡️",
-  scenery: "🌄",
-  shopping: "🛍️",
-  sightseeing: "🗺️",
-  ski: "🎿",
-  walkability: "🚶",
-  wellness: "🧘",
-  wildlife: "🐾",
-  "winter-sports": "🏂",
-  "women-friendly": "🙋‍♀️",
-};
 
 const scoreGroups = [
   {

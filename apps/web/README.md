@@ -14,8 +14,15 @@ its dropdown for suggestions, then type to search; the original destination is
 excluded. Selecting a place loads its overall score and tier in the second
 column. **Change** replaces it and **Remove** clears it. Both selections survive
 refreshes, shared links, and Back/Forward using `/compare?destination=lisbon&with=porto`.
-The **Add category** button remains disabled for the next increment; no categories
-or weather are added automatically.
+**Add category** opens a searchable list of categories scored for either selected
+destination. Each selection adds a row with both scores and a colored score bar;
+missing scores show **Unrated**. Remove a row with its × button. Overall stays in
+the destination headers. Categories start empty and are saved in selection order
+in a readable URL, for example
+`/compare?destination=lisbon&with=porto&categories=food,budget`.
+Refreshes, shared links, and Back/Forward restore these rows; changing or removing
+the second destination keeps them. Map filters do not select comparison categories,
+and weather is not added automatically.
 
 Discovery settings live in the `/map` query string:
 
@@ -92,9 +99,9 @@ If you are developing a production application, we recommend updating the config
 
 ```js
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
 
@@ -109,42 +116,40 @@ export default defineConfig([
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
-
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from "eslint-plugin-react-x";
+import reactDom from "eslint-plugin-react-dom";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
       // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
+      reactX.configs["recommended-typescript"],
       // Enable lint rules for React DOM
       reactDom.configs.recommended,
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
-
+]);
 ```

@@ -19,7 +19,11 @@ export const CompareDestinationSummary = ({ destination, label, actions }: Compa
         {actions}
       </div>
       <p className="mt-2 text-sm text-slate-400">
-        {[destination.parentDestination?.name, destination.country.name].filter(Boolean).join(" · ")}
+        {[
+          destination.parentDestination?.name,
+          destination.adminArea1,
+          destination.country.name,
+        ].filter(Boolean).join(" · ")}
       </p>
       <p className="mt-7 text-4xl font-semibold tabular-nums">
         {overallScore === null ? "—" : overallScore.toFixed(2)}

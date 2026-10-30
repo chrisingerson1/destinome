@@ -1,20 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { getDestination } from "../lib/destinations";
+import { destinationHref, discoverySearch } from "../lib/discovery";
 import {
-  destinationHref,
-  discoverySearch,
-} from "../lib/discovery";
-import {
+  getComparisonCategories,
+  getComparisonCategoryOptions,
   getSecondaryDestinationSlug,
+  updateComparisonCategories,
   updateSecondaryDestination,
 } from "../lib/comparison";
 import { useReadableSearchParams } from "../lib/useReadableSearchParams";
 import { useMapReturnTo } from "../lib/useMapReturnTo";
 import { CompareDestinationSummary } from "../components/compare/CompareDestinationSummary";
 import { ComparisonDestinationSlot } from "../components/compare/ComparisonDestinationSlot";
+import { ComparisonCategoryPicker } from "../components/compare/ComparisonCategoryPicker";
+import { ComparisonCategoryRows } from "../components/compare/ComparisonCategoryRows";
 
 export const ComparePage = () => {
   const params = useReadableSearchParams();
@@ -22,6 +24,7 @@ export const ComparePage = () => {
   const location = useLocation();
   const slug = params.get("destination")?.trim() || undefined;
   const secondarySlug = getSecondaryDestinationSlug(params);
+  const selectedCategories = getComparisonCategories(params);
   const returnTo = useMapReturnTo();
   const {
     data: destination,
@@ -38,6 +41,22 @@ export const ComparePage = () => {
     },
     enabled: Boolean(slug),
   });
+  const secondaryQuery = useQuery({
+    queryKey: ["destination", secondarySlug],
+    queryFn: ({ signal }) => {
+      if (!secondarySlug) throw new Error("Missing destination slug");
+      return getDestination(secondarySlug, signal);
+    },
+    enabled: Boolean(secondarySlug),
+  });
+  const categoryOptions = useMemo(
+    () =>
+      getComparisonCategoryOptions(
+        destination?.scores,
+        secondaryQuery.data?.scores,
+      ),
+    [destination?.scores, secondaryQuery.data?.scores],
+  );
 
   useEffect(() => {
     document.title = destination
@@ -61,13 +80,21 @@ export const ComparePage = () => {
     );
   };
 
+  const selectCategories = (categories: string[]) => {
+    void navigate(
+      {
+        search: discoverySearch(updateComparisonCategories(params, categories)),
+        hash: location.hash,
+      },
+      { preventScrollReset: true, state: location.state },
+    );
+  };
+
   return (
     <main className="min-h-[calc(100dvh-var(--navbar-height))] bg-[#05080f] text-slate-100">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
         <Link
-          to={
-            destination ? destinationHref(destination.slug) : returnTo
-          }
+          to={destination ? destinationHref(destination.slug) : returnTo}
           className="inline-flex min-h-11 items-center text-sm text-sky-300 transition-colors hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
         >
           ← Back to {destination ? destination.name : "map"}
@@ -137,30 +164,56 @@ export const ComparePage = () => {
                 key={`${slug}:${secondarySlug ?? "empty"}`}
                 primarySlug={slug}
                 selectedSlug={secondarySlug}
+                query={secondaryQuery}
                 onSelect={({ slug }) => selectSecondary(slug)}
                 onRemove={() => selectSecondary(null)}
               />
             </div>
-            <div className="grid border-t border-slate-700/80 md:grid-cols-[minmax(140px,0.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
-              <div className="border-b border-slate-700/80 p-6 md:border-r md:border-b-0">
-                <h2 className="text-sm font-medium text-slate-400">
-                  Categories
-                </h2>
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 min-h-11 cursor-not-allowed rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-500"
-                >
-                  + Add category
-                </button>
+            {selectedCategories.length > 0 && (
+              <ComparisonCategoryRows
+                selected={selectedCategories}
+                categories={categoryOptions}
+                primary={destination}
+                secondary={secondaryQuery.data}
+                secondaryState={
+                  !secondarySlug
+                    ? "empty"
+                    : secondaryQuery.isError
+                      ? "error"
+                      : secondaryQuery.isPending
+                        ? "loading"
+                        : "ready"
+                }
+                onRemove={(category) =>
+                  selectCategories(
+                    selectedCategories.filter((slug) => slug !== category),
+                  )
+                }
+              />
+            )}
+            <div className="grid border-t border-slate-700/80 md:min-h-20 md:grid-cols-[minmax(140px,0.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="flex items-center border-b border-slate-700/80 px-6 py-3 md:border-r md:border-b-0">
+                <ComparisonCategoryPicker
+                  categories={categoryOptions}
+                  selected={selectedCategories}
+                  onSelect={(category) =>
+                    selectCategories([...selectedCategories, category])
+                  }
+                />
               </div>
-              <div className="flex min-h-56 flex-col items-center justify-center gap-3 p-8 text-center md:col-span-2 md:min-h-72">
-                <h2 className="text-lg font-semibold">
-                  No categories selected
-                </h2>
-                <p className="max-w-sm text-sm leading-relaxed text-slate-400">
-                  Selected categories will appear here for comparison.
-                </p>
+              <div className="flex flex-col items-center justify-center gap-2 px-6 py-3 text-center md:col-span-2">
+                {selectedCategories.length === 0 ? (
+                  <>
+                    <h2 className="text-sm font-medium">
+                      No categories selected
+                    </h2>
+                    <p className="max-w-sm text-sm leading-relaxed text-slate-400">
+                      Selected categories will appear here for comparison.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">Scores out of 10</p>
+                )}
               </div>
             </div>
           </section>

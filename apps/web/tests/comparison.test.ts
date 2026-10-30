@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createMemoryRouter } from "react-router";
-import { comparisonHref, getSecondaryDestinationSlug, updateSecondaryDestination } from "../src/lib/comparison.ts";
+import {
+  comparisonHref,
+  getComparisonCategories,
+  getComparisonCategoryOptions,
+  getComparisonScore,
+  getSecondaryDestinationSlug,
+  updateComparisonCategories,
+  updateSecondaryDestination,
+} from "../src/lib/comparison.ts";
 import { destinationHref, discoverySearch } from "../src/lib/discovery.ts";
 import { createMapReturnStore } from "../src/lib/mapReturn.ts";
 
@@ -82,5 +90,67 @@ test("shared comparison URLs and browser history restore both destinations", asy
     assert.equal(getSecondaryDestinationSlug(new URLSearchParams(router.state.location.search)), undefined);
     await router.navigate(1);
     assert.equal(getSecondaryDestinationSlug(new URLSearchParams(router.state.location.search)), "barcelona");
+  } finally { router.dispose(); }
+});
+
+test("comparison categories start empty and parse unique valid slugs in selection order", () => {
+  assert.deepEqual(getComparisonCategories(new URLSearchParams("scores=food:8&category=food")), []);
+  const params = new URLSearchParams({ categories: " Food, budget,food,overall,,bad_slug,-bad,nature " });
+  assert.deepEqual(getComparisonCategories(params), ["food", "budget", "nature"]);
+});
+
+test("category changes preserve destinations and unrelated URL settings without mutating inputs", () => {
+  const original = new URLSearchParams("destination=lisbon&with=porto&campaign=shared");
+  const added = updateComparisonCategories(original, ["food", "budget", "food", "overall"]);
+  assert.equal(discoverySearch(added), "?destination=lisbon&with=porto&campaign=shared&categories=food,budget");
+  assert.equal(original.has("categories"), false);
+  assert.deepEqual(getComparisonCategories(updateSecondaryDestination(added, "barcelona")), ["food", "budget"]);
+  assert.deepEqual(getComparisonCategories(updateSecondaryDestination(added, null)), ["food", "budget"]);
+  const removed = updateComparisonCategories(added, ["budget"]);
+  assert.deepEqual(getComparisonCategories(removed), ["budget"]);
+  const empty = updateComparisonCategories(removed, []);
+  assert.equal(empty.toString(), original.toString());
+});
+
+test("category choices combine both destinations, exclude overall, and sort by display name", () => {
+  assert.deepEqual(getComparisonCategoryOptions(undefined), []);
+  assert.deepEqual(getComparisonCategoryOptions([
+    { slug: "food", name: "Food", score: 8 },
+    { slug: "overall", name: "Overall Score", score: 9 },
+  ], [
+    { slug: "budget", name: "Budget", score: 7 },
+    { slug: "food", name: "Other label", score: 6 },
+  ]), [{ slug: "budget", name: "Budget" }, { slug: "food", name: "Food" }]);
+});
+
+test("comparison scores preserve zero and ten, and explicitly identify unavailable values", () => {
+  const score = (value: number) => getComparisonScore([{ slug: "food", name: "Food", score: value }], "food");
+  assert.equal(score(0), 0);
+  assert.equal(score(10), 10);
+  assert.equal(score(8.25), 8.25);
+  for (const value of [NaN, Infinity, -1, 11]) assert.equal(score(value), null);
+  assert.equal(getComparisonScore(undefined, "food"), null);
+  assert.equal(getComparisonScore([], "food"), null);
+});
+
+test("selected category rows survive shared links, refresh parsing, and Back/Forward", async () => {
+  const router = createMemoryRouter([{ path: "/compare" }], {
+    initialEntries: ["/compare?destination=lisbon&with=porto"],
+  });
+  const current = () => new URLSearchParams(router.state.location.search);
+  try {
+    await router.navigate({ search: discoverySearch(updateComparisonCategories(current(), ["food", "budget"])) });
+    const shared = new URL(router.state.location.pathname + router.state.location.search, "https://destinome.test");
+    assert.deepEqual(getComparisonCategories(shared.searchParams), ["food", "budget"]);
+    assert.equal(getSecondaryDestinationSlug(shared.searchParams), "porto");
+    await router.navigate({ search: discoverySearch(updateComparisonCategories(current(), ["budget"])) });
+    await router.navigate(-1);
+    assert.deepEqual(getComparisonCategories(current()), ["food", "budget"]);
+    await router.navigate(-1);
+    assert.deepEqual(getComparisonCategories(current()), []);
+    await router.navigate(1);
+    assert.deepEqual(getComparisonCategories(current()), ["food", "budget"]);
+    await router.navigate(1);
+    assert.deepEqual(getComparisonCategories(current()), ["budget"]);
   } finally { router.dispose(); }
 });
