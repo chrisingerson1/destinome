@@ -10,6 +10,16 @@ export function comparisonHref(destinationSlug: string): string {
   return `/compare${discoverySearch(params)}`;
 }
 
+export function updatePrimaryDestination(params: URLSearchParams, slug: string): URLSearchParams {
+  const next = new URLSearchParams(params);
+  const candidate = slug.trim();
+  if (!candidate) return next;
+  next.set("destination", candidate);
+  if (next.get("with")?.trim() === candidate) next.delete("with");
+  if (next.get("third")?.trim() === candidate) next.delete("third");
+  return next;
+}
+
 export function getSecondaryDestinationSlug(params: URLSearchParams): string | undefined {
   const primary = params.get("destination")?.trim();
   const secondary = params.get("with")?.trim();
@@ -20,8 +30,28 @@ export function updateSecondaryDestination(params: URLSearchParams, slug: string
   const next = new URLSearchParams(params);
   const candidate = slug?.trim();
   const primary = next.get("destination")?.trim();
-  next.delete("with");
-  if (primary && candidate && candidate !== primary) next.set("with", candidate);
+  if (!candidate) next.delete("with");
+  else if (primary && candidate !== primary && candidate !== getThirdDestinationSlug(params)) {
+    next.set("with", candidate);
+  }
+  return next;
+}
+
+export function getThirdDestinationSlug(params: URLSearchParams): string | undefined {
+  const primary = params.get("destination")?.trim();
+  const third = params.get("third")?.trim();
+  return primary && third && third !== primary && third !== getSecondaryDestinationSlug(params)
+    ? third : undefined;
+}
+
+export function updateThirdDestination(params: URLSearchParams, slug: string | null): URLSearchParams {
+  const next = new URLSearchParams(params);
+  const candidate = slug?.trim();
+  const primary = next.get("destination")?.trim();
+  if (!candidate) next.delete("third");
+  else if (primary && candidate !== primary && candidate !== getSecondaryDestinationSlug(next)) {
+    next.set("third", candidate);
+  }
   return next;
 }
 

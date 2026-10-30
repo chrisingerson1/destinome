@@ -2,6 +2,9 @@
 
 :root {
   --navbar-height: 4rem;
+  /* Keep centered content in place when routes gain a vertical scrollbar. */
+  scrollbar-gutter: stable;
+  background-color: #05080f;
   font-family: Inter, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

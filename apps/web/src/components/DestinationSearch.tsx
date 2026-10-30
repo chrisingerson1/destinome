@@ -14,10 +14,12 @@ type DestinationSearchProps = {
   ariaLabel?: string;
   showSuggestionsOnFocus?: boolean;
   excludeSlug?: string;
+  excludeSlugs?: readonly string[];
 };
 
 const EMPTY_SCORES: ReadonlyMap<string, number | null> = new Map();
 const EMPTY_PARENTS: ReadonlyMap<string, string> = new Map();
+const EMPTY_EXCLUSIONS: readonly string[] = [];
 
 const normalizeSearchText = (value: string): string =>
   value
@@ -34,6 +36,7 @@ export const DestinationSearch = ({
   ariaLabel = "Search destinations",
   showSuggestionsOnFocus = false,
   excludeSlug,
+  excludeSlugs = EMPTY_EXCLUSIONS,
 }: DestinationSearchProps) => {
   const generatedId = useId();
   const inputId = id ?? `${generatedId}-search`;
@@ -124,7 +127,7 @@ export const DestinationSearch = ({
 
         if (controller.signal.aborted) return;
 
-        setResults(destinations.filter(({ slug }) => slug !== excludeSlug));
+        setResults(destinations.filter(({ slug }) => slug !== excludeSlug && !excludeSlugs.includes(slug)));
         setHasError(false);
         setActiveIndex(-1);
       } catch (error) {
@@ -152,6 +155,7 @@ export const DestinationSearch = ({
     knownParents,
     parentNamesBySlug,
     excludeSlug,
+    excludeSlugs,
     retryVersion,
   ]);
 

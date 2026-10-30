@@ -3,12 +3,18 @@ import { scoreEmojis } from "../../config/scoreEmojis";
 import { getComparisonScore, type ComparisonCategory } from "../../lib/comparison";
 import type { DestinationDetail } from "../../types/destination";
 
+export type ComparisonColumn = {
+  id: string;
+  label: string;
+  destination?: DestinationDetail;
+  state: "empty" | "loading" | "error" | "ready";
+};
+
 type ComparisonCategoryRowsProps = {
   selected: readonly string[];
   categories: readonly ComparisonCategory[];
-  primary: DestinationDetail;
-  secondary?: DestinationDetail;
-  secondaryState: "empty" | "loading" | "error" | "ready";
+  columns: readonly ComparisonColumn[];
+  desktopColumns: string;
   onRemove: (slug: string) => void;
 };
 
@@ -32,27 +38,26 @@ const ScoreValue = ({ score }: { score: number | null }) => score === null ? (
 export const ComparisonCategoryRows = ({
   selected,
   categories,
-  primary,
-  secondary,
-  secondaryState,
+  columns,
+  desktopColumns,
   onRemove,
 }: ComparisonCategoryRowsProps) => {
   const names = new Map(categories.map(({ slug, name }) => [slug, name]));
-  const secondaryName = secondary?.name ?? "Comparison destination";
 
   return (
     <div role="table" aria-label="Category score comparison">
       <div role="row" className="sr-only">
         <span role="columnheader">Category</span>
-        <span role="columnheader">{primary.name}</span>
-        <span role="columnheader">{secondaryName}</span>
+        {columns.map(({ id, label, destination }) => (
+          <span key={id} role="columnheader">{destination?.name ?? label}</span>
+        ))}
       </div>
       {selected.map((slug) => {
         const name = names.get(slug) ?? slug.split("-")
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
         return (
-          <div key={slug} role="row" className="grid grid-cols-2 border-t border-slate-700/80 md:min-h-14 md:grid-cols-[minmax(140px,0.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
-            <div role="rowheader" className="col-span-2 flex min-w-0 items-center justify-between gap-3 px-6 py-2 md:col-span-1 md:border-r md:border-slate-700/80">
+          <div key={slug} role="row" className={`grid grid-cols-1 border-t border-slate-700/80 lg:min-h-14 ${columns.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"} ${desktopColumns}`}>
+            <div role="rowheader" className="col-span-full flex min-w-0 items-center justify-between gap-3 px-6 py-2 lg:col-span-1 lg:border-r lg:border-slate-700/80">
               <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
                 <span aria-hidden="true" className="shrink-0">{scoreEmojis[slug] ?? "✨"}</span>
                 <span className="min-w-0 break-words">{name}</span>
@@ -66,22 +71,20 @@ export const ComparisonCategoryRows = ({
                 ×
               </button>
             </div>
-            <div role="cell" className="flex min-w-0 flex-col justify-center border-r border-slate-700/80 px-6 py-2 md:px-8">
-              <p aria-hidden="true" className="mb-2 text-xs text-slate-400 md:hidden">{primary.name}</p>
-              <ScoreValue score={getComparisonScore(primary.scores, slug)} />
-            </div>
-            <div role="cell" className="flex min-w-0 flex-col justify-center px-6 py-2 md:px-8">
-              <p aria-hidden="true" className="mb-2 text-xs text-slate-400 md:hidden">{secondaryName}</p>
-              {secondaryState === "empty" ? (
-                <span className="text-sm text-slate-400">Select a destination</span>
-              ) : secondaryState === "loading" ? (
-                <span className="text-sm text-slate-400">Loading…</span>
-              ) : secondaryState === "error" ? (
-                <span className="text-sm text-slate-400">Unable to load</span>
-              ) : (
-                <ScoreValue score={getComparisonScore(secondary?.scores, slug)} />
-              )}
-            </div>
+            {columns.map(({ id, label, destination, state }) => (
+              <div key={id} role="cell" className="flex min-w-0 flex-col justify-center border-t border-slate-700/80 px-6 py-2 sm:border-t-0 sm:border-r sm:last:border-r-0 lg:px-8">
+                <p aria-hidden="true" className="mb-2 text-xs text-slate-400 lg:hidden">{destination?.name ?? label}</p>
+                {state === "empty" ? (
+                  <span className="text-sm text-slate-400">Select a destination</span>
+                ) : state === "loading" ? (
+                  <span className="text-sm text-slate-400">Loading…</span>
+                ) : state === "error" ? (
+                  <span className="text-sm text-slate-400">Unable to load</span>
+                ) : (
+                  <ScoreValue score={getComparisonScore(destination?.scores, slug)} />
+                )}
+              </div>
+            ))}
           </div>
         );
       })}

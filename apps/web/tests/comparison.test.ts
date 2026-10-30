@@ -7,8 +7,11 @@ import {
   getComparisonCategoryOptions,
   getComparisonScore,
   getSecondaryDestinationSlug,
+  getThirdDestinationSlug,
   updateComparisonCategories,
+  updatePrimaryDestination,
   updateSecondaryDestination,
+  updateThirdDestination,
 } from "../src/lib/comparison.ts";
 import { destinationHref, discoverySearch } from "../src/lib/discovery.ts";
 import { createMapReturnStore } from "../src/lib/mapReturn.ts";
@@ -18,6 +21,63 @@ test("comparison links preload the destination and work without saved map settin
   const params = new URL(comparisonHref("north-end-boston"), "https://destinome.test").searchParams;
   assert.equal(params.get("destination"), "north-end-boston");
   assert.equal(params.has("returnTo"), false);
+});
+
+test("selecting the first destination preserves categories and avoids comparing the same place twice", () => {
+  const original = new URLSearchParams("categories=food,budget&with=porto&campaign=shared");
+  const selected = updatePrimaryDestination(original, " lisbon ");
+  assert.equal(selected.get("destination"), "lisbon");
+  assert.equal(getSecondaryDestinationSlug(selected), "porto");
+  assert.deepEqual(getComparisonCategories(selected), ["food", "budget"]);
+  assert.equal(selected.get("campaign"), "shared");
+  assert.equal(original.has("destination"), false);
+  assert.equal(updatePrimaryDestination(original, "porto").has("with"), false);
+});
+
+test("a comparison can start on the page, retain its first selection on refresh, and return to the picker through history", async () => {
+  const router = createMemoryRouter([{ path: "/compare" }], {
+    initialEntries: ["/compare#comparison"],
+  });
+  const current = () => new URLSearchParams(router.state.location.search);
+  try {
+    await router.navigate({ search: discoverySearch(updatePrimaryDestination(current(), "lisbon")), hash: router.state.location.hash });
+    const shared = new URL(router.state.location.pathname + router.state.location.search + router.state.location.hash, "https://destinome.test");
+    assert.equal(shared.searchParams.get("destination"), "lisbon");
+    assert.equal(shared.hash, "#comparison");
+    assert.equal(shared.searchParams.has("returnTo"), false);
+    await router.navigate({ search: discoverySearch(updateSecondaryDestination(current(), "porto")), hash: router.state.location.hash });
+    await router.navigate(-1);
+    assert.equal(current().get("destination"), "lisbon");
+    assert.equal(getSecondaryDestinationSlug(current()), undefined);
+    await router.navigate(-1);
+    assert.equal(current().has("destination"), false);
+    await router.navigate(1);
+    assert.equal(current().get("destination"), "lisbon");
+  } finally { router.dispose(); }
+});
+
+test("changing the first city preserves both other cities and categories through refresh and Back/Forward", async () => {
+  const original = "/compare?destination=lisbon&with=porto&third=paris&categories=food,budget&campaign=shared#comparison";
+  const router = createMemoryRouter([{ path: "/compare" }], { initialEntries: [original] });
+  const current = () => new URLSearchParams(router.state.location.search);
+  try {
+    const next = updatePrimaryDestination(current(), "madrid");
+    await router.navigate({ search: discoverySearch(next), hash: router.state.location.hash });
+    const shared = new URL(router.state.location.pathname + router.state.location.search + router.state.location.hash, "https://destinome.test");
+    assert.equal(shared.searchParams.get("destination"), "madrid");
+    assert.equal(getSecondaryDestinationSlug(shared.searchParams), "porto");
+    assert.equal(getThirdDestinationSlug(shared.searchParams), "paris");
+    assert.deepEqual(getComparisonCategories(shared.searchParams), ["food", "budget"]);
+    assert.equal(shared.searchParams.get("campaign"), "shared");
+    assert.equal(shared.hash, "#comparison");
+    await router.navigate(-1);
+    assert.equal(current().get("destination"), "lisbon");
+    assert.equal(getThirdDestinationSlug(current()), "paris");
+    await router.navigate(1);
+    assert.equal(current().get("destination"), "madrid");
+    assert.equal(getSecondaryDestinationSlug(current()), "porto");
+    assert.deepEqual(getComparisonCategories(current()), ["food", "budget"]);
+  } finally { router.dispose(); }
 });
 
 test("details and comparison links stay clean while map settings survive a refresh", () => {
@@ -70,6 +130,62 @@ test("a comparison cannot select the original destination or exist without one",
   assert.equal(updateSecondaryDestination(new URLSearchParams(), "porto").has("with"), false);
 });
 
+test("third-destination parsing keeps existing two-city links and ignores duplicate or orphan selections", () => {
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&with=porto")), undefined);
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("third=paris")), undefined);
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&third=lisbon")), undefined);
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&with=porto&third=porto")), undefined);
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&third=%20paris%20")), "paris");
+});
+
+test("adding, changing, and removing a third city preserves the others and selected categories", () => {
+  const original = new URLSearchParams("destination=lisbon&with=porto&categories=food,budget&campaign=shared");
+  const added = updateThirdDestination(original, " paris ");
+  assert.equal(getThirdDestinationSlug(added), "paris");
+  assert.equal(original.has("third"), false);
+  assert.equal(added.get("destination"), "lisbon");
+  assert.equal(getSecondaryDestinationSlug(added), "porto");
+  assert.deepEqual(getComparisonCategories(added), ["food", "budget"]);
+  assert.equal(added.get("campaign"), "shared");
+  const changed = updateThirdDestination(added, "madrid");
+  assert.equal(getThirdDestinationSlug(changed), "madrid");
+  assert.equal(getThirdDestinationSlug(updateSecondaryDestination(changed, null)), "madrid");
+  assert.equal(getThirdDestinationSlug(updateSecondaryDestination(changed, "berlin")), "madrid");
+  assert.equal(updateThirdDestination(changed, null).toString(), original.toString());
+});
+
+test("neither optional column can duplicate a selected city, and changing the first removes duplicate entries", () => {
+  const params = new URLSearchParams("destination=lisbon&with=porto&third=paris");
+  assert.equal(getThirdDestinationSlug(updateThirdDestination(params, "lisbon")), "paris");
+  assert.equal(getThirdDestinationSlug(updateThirdDestination(params, "porto")), "paris");
+  assert.equal(getSecondaryDestinationSlug(updateSecondaryDestination(params, "paris")), "porto");
+  assert.equal(getThirdDestinationSlug(updateThirdDestination(new URLSearchParams(), "paris")), undefined);
+  assert.equal(updatePrimaryDestination(params, "paris").has("third"), false);
+});
+
+test("shared URLs and Back/Forward restore all three cities and the selected score rows", async () => {
+  const router = createMemoryRouter([{ path: "/compare" }], {
+    initialEntries: ["/compare?destination=lisbon&with=porto&categories=food,budget"],
+  });
+  const current = () => new URLSearchParams(router.state.location.search);
+  try {
+    await router.navigate({ search: discoverySearch(updateThirdDestination(current(), "paris")) });
+    const shared = new URL(router.state.location.pathname + router.state.location.search, "https://destinome.test");
+    assert.equal(shared.searchParams.get("destination"), "lisbon");
+    assert.equal(getSecondaryDestinationSlug(shared.searchParams), "porto");
+    assert.equal(getThirdDestinationSlug(shared.searchParams), "paris");
+    assert.deepEqual(getComparisonCategories(shared.searchParams), ["food", "budget"]);
+    await router.navigate({ search: discoverySearch(updateThirdDestination(current(), null)) });
+    await router.navigate(-1);
+    assert.equal(getThirdDestinationSlug(current()), "paris");
+    await router.navigate(-1);
+    assert.equal(getThirdDestinationSlug(current()), undefined);
+    await router.navigate(1);
+    assert.equal(getThirdDestinationSlug(current()), "paris");
+    assert.deepEqual(getComparisonCategories(current()), ["food", "budget"]);
+  } finally { router.dispose(); }
+});
+
 test("shared comparison URLs and browser history restore both destinations", async () => {
   const router = createMemoryRouter([{ path: "/compare" }], {
     initialEntries: [comparisonHref("lisbon")],
@@ -112,7 +228,7 @@ test("category changes preserve destinations and unrelated URL settings without 
   assert.equal(empty.toString(), original.toString());
 });
 
-test("category choices combine both destinations, exclude overall, and sort by display name", () => {
+test("category choices combine all three destinations, exclude overall, and sort by display name", () => {
   assert.deepEqual(getComparisonCategoryOptions(undefined), []);
   assert.deepEqual(getComparisonCategoryOptions([
     { slug: "food", name: "Food", score: 8 },
@@ -120,7 +236,9 @@ test("category choices combine both destinations, exclude overall, and sort by d
   ], [
     { slug: "budget", name: "Budget", score: 7 },
     { slug: "food", name: "Other label", score: 6 },
-  ]), [{ slug: "budget", name: "Budget" }, { slug: "food", name: "Food" }]);
+  ], [
+    { slug: "culture", name: "Culture", score: 9 },
+  ]), [{ slug: "budget", name: "Budget" }, { slug: "culture", name: "Culture" }, { slug: "food", name: "Food" }]);
 });
 
 test("comparison scores preserve zero and ten, and explicitly identify unavailable values", () => {

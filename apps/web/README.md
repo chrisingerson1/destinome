@@ -8,20 +8,36 @@ Destination and comparison links do not include `returnTo`. Refreshing retains
 the saved map view; a shared link uses the recipient's own saved map view, falling
 back to `/map` when no map has been saved. Existing `returnTo` links import their
 map settings into storage and remove the parameter without adding a history entry.
-Opening `/compare` directly provides an entry point back to destination discovery.
-The **Compare with** field reuses Globe's destination search. Focus it or open
-its dropdown for suggestions, then type to search; the original destination is
-excluded. Selecting a place loads its overall score and tier in the second
-column. **Change** replaces it and **Remove** clears it. Both selections survive
-refreshes, shared links, and Back/Forward using `/compare?destination=lisbon&with=porto`.
-**Add category** opens a searchable list of categories scored for either selected
-destination. Each selection adds a row with both scores and a colored score bar;
+Opening `/compare` directly shows the shared destination search for choosing the
+first destination. Focus it or open its dropdown for suggestions, then type to
+search. Selecting a place loads it in the first column and reveals the second
+destination picker, without visiting its details page. Two destination columns
+are shown by default. Once the second destination is selected, the **+** tab at
+the comparison's top right opens the third
+column; its **×** tab closes that column and clears its selection. Removing the
+third destination also returns to two columns. A URL with a selected third city
+opens all three automatically; opening an empty third picker is temporary UI state.
+Compare supports up to three distinct destinations. Both optional pickers reuse
+Globe's destination search and exclude cities selected in the other columns.
+Focus a field or open its dropdown for suggestions, then type to search.
+**Change** is available in every selected destination column, including the first.
+It opens the same search picker, excluding the other selected cities. **Cancel**
+keeps the current selection. Changing the first city preserves the other cities,
+selected categories, and an open third column. **Remove** clears an optional column.
+All three
+selections survive refreshes, shared links, and Back/Forward using
+`/compare?destination=lisbon&with=porto&third=paris`. Existing two-city URLs work.
+The destination headers and score rows resize together when the third column is
+opened or closed. Smaller screens use labeled score cells. Loading or failure in
+an optional column leaves the others usable.
+**Add category** opens a searchable list of categories scored for any selected
+destination. Each selection adds a row with each city's score and colored score bar;
 missing scores show **Unrated**. Remove a row with its × button. Overall stays in
 the destination headers. Categories start empty and are saved in selection order
 in a readable URL, for example
-`/compare?destination=lisbon&with=porto&categories=food,budget`.
+`/compare?destination=lisbon&with=porto&third=paris&categories=food,budget`.
 Refreshes, shared links, and Back/Forward restore these rows; changing or removing
-the second destination keeps them. Map filters do not select comparison categories,
+an optional destination keeps them. Map filters do not select comparison categories,
 and weather is not added automatically.
 
 Discovery settings live in the `/map` query string:
