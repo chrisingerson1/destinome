@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router";
+import { useCallback, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router";
+import { useReadableSearchParams } from "./useReadableSearchParams";
 import {
   discoverySearch,
   readDiscoveryState,
@@ -8,20 +9,9 @@ import {
 } from "./discovery";
 
 export function useDiscoveryState() {
-  const [params] = useSearchParams();
+  const params = useReadableSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const readableSearch = discoverySearch(params);
-
-  // Older encoded links still load normally, then become readable in place.
-  useEffect(() => {
-    if (location.search === readableSearch) return;
-    void navigate({ search: readableSearch, hash: location.hash }, {
-      replace: true,
-      preventScrollReset: true,
-      state: location.state,
-    });
-  }, [location.search, location.hash, location.state, readableSearch, navigate]);
   const rawScores = params.get("scores") ?? "";
   // Camera changes must not invalidate filtering or dismiss an open pin popup.
   const filters = useMemo(

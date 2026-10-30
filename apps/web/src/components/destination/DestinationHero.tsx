@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 
 import type { DestinationDetail } from "../../types/destination";
+import { comparisonHref } from "../../lib/comparison";
 
 type DestinationHeroProps = {
   destination: DestinationDetail;
@@ -27,12 +28,20 @@ export const DestinationHero = ({
 
       {/* Content */}
       <div className="relative flex min-h-100 flex-col justify-between p-8 md:p-12">
-        <Link
-          to={backTo}
-          className="w-fit text-sm text-slate-300 transition hover:text-white"
-        >
-          ← Back to map
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            to={backTo}
+            className="w-fit text-sm text-slate-300 transition hover:text-white"
+          >
+            ← Back to map
+          </Link>
+          <Link
+            to={comparisonHref(destination.slug, backTo)}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-sky-300/60 px-4 py-2 text-sm font-medium text-sky-200 transition-colors hover:bg-sky-300/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
+          >
+            Compare
+          </Link>
+        </div>
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-3 text-sm font-medium tracking-widest text-slate-300 uppercase">

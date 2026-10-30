@@ -145,9 +145,15 @@ export function discoverySearch(params: URLSearchParams): string {
   // Keep discovery separators readable without decoding query delimiters or
   // changing the encoding of unrelated parameters.
   const query = params.toString().replace(
-    /(^|&)(scores|view)=([^&]*)/g,
-    (_match, separator: string, key: string, value: string) =>
-      `${separator}${key}=${value.replace(/%3A/gi, ":").replace(/%2C/gi, ",")}`,
+    /(^|&)(scores|view|returnTo)=([^&]*)/g,
+    (_match, separator: string, key: string, value: string) => {
+      const readable = key === "returnTo"
+        // Keep nested '&', '#', '+', and '%' encoded so the return URL stays
+        // one parameter and already-encoded inner values survive unchanged.
+        ? value.replace(/%(?:2F|2C|3A|3F|3D)/gi, (token) => decodeURIComponent(token))
+        : value.replace(/%3A/gi, ":").replace(/%2C/gi, ",");
+      return `${separator}${key}=${readable}`;
+    },
   );
   return query ? `?${query}` : "";
 }
@@ -165,5 +171,5 @@ export function destinationHref(slug: string, returnTo: string): string {
   const path = `/destination/${encodeURIComponent(slug)}`;
   return returnTo === "/map"
     ? path
-    : `${path}?${new URLSearchParams({ returnTo })}`;
+    : `${path}${discoverySearch(new URLSearchParams({ returnTo }))}`;
 }

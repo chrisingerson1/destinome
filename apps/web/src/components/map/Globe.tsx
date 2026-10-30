@@ -34,7 +34,7 @@ import {
   type InteractivePushpinLayer,
 } from "./createPushpinLayer";
 
-import { DestinationSearch } from "./DestinationSearch";
+import { DestinationSearch } from "../DestinationSearch";
 import { MapControls } from "./MapControls";
 
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs?v=2");
@@ -699,11 +699,13 @@ export const Globe = () => {
         style={{ width: "100%", height: "100%" }}
       />
 
-      <DestinationSearch
-        onSelect={handleDestinationSelect}
-        scoresBySlug={scoresBySlug}
-        parentNamesBySlug={parentNamesBySlug}
-      />
+      <div className="pointer-events-none absolute top-5 left-5 z-30 w-[min(380px,calc(100vw-40px))]">
+        <DestinationSearch
+          onSelect={handleDestinationSelect}
+          scoresBySlug={scoresBySlug}
+          parentNamesBySlug={parentNamesBySlug}
+        />
+      </div>
 
       <MapControls
         categories={availableCategories}

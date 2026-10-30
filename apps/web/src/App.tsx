@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router";
 
 import { DestinationPage } from "./pages/DestinationPage";
 import { HomePage } from "./pages/HomePage";
+import { ComparePage } from "./pages/ComparePage";
 import { Navbar } from "./components/Navbar";
 import { useGlobeLaunch } from "./lib/useGlobeLaunch";
 
@@ -40,6 +41,7 @@ export default function App() {
           }
         />
         <Route path="/destination/:slug" element={<DestinationPage />} />
+        <Route path="/compare" element={<ComparePage />} />
       </Routes>
     </div>
   );

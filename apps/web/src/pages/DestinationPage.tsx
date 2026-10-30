@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useParams } from "react-router";
 
 import { getDestination } from "../lib/destinations";
 import { discoveryReturnTo } from "../lib/discovery";
+import { useReadableSearchParams } from "../lib/useReadableSearchParams";
 
 import {
   DestinationHero,
@@ -15,7 +16,7 @@ import {
 
 export const DestinationPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [params] = useSearchParams();
+  const params = useReadableSearchParams();
   const returnTo = discoveryReturnTo(params);
 
   const {

@@ -1,5 +1,21 @@
 # Destinome web
 
+The destination details **Compare** button opens `/compare?destination=<slug>`
+with that destination preloaded using the existing detail query cache. Refreshes
+and shared URLs restore the source destination. Saved discovery settings are
+carried through `returnTo`, including the link back to the source's details page.
+Return URLs display readable slashes, commas, colons, question marks, and equals
+signs. Nested ampersands remain encoded so their map settings stay inside
+`returnTo`; fragments and already-escaped values also retain their meaning.
+Opening `/compare` directly provides an entry point back to destination discovery.
+The **Compare with** field reuses Globe's destination search. Focus it or open
+its dropdown for suggestions, then type to search; the original destination is
+excluded. Selecting a place loads its overall score and tier in the second
+column. **Change** replaces it and **Remove** clears it. Both selections survive
+refreshes, shared links, and Back/Forward using `/compare?destination=lisbon&with=porto`.
+The **Add category** button remains disabled for the next increment; no categories
+or weather are added automatically.
+
 Discovery settings live in the `/map` query string:
 
 - `scores=food:8,nature:7`: every selected category must meet its minimum (0–10).

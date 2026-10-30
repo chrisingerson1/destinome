@@ -10,6 +10,8 @@ export type DestinationSearchResult = {
   name: string;
   slug: string;
   country: CountrySummary;
+  adminArea?: string | null;
+  parentDestination?: { id: number; name: string; slug: string } | null;
 };
 
 export async function getDestination(
