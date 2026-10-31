@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { normalizeSearchText } from "../lib/search";
 
 import {
   searchDestinations,
@@ -20,12 +21,6 @@ type DestinationSearchProps = {
 const EMPTY_SCORES: ReadonlyMap<string, number | null> = new Map();
 const EMPTY_PARENTS: ReadonlyMap<string, string> = new Map();
 const EMPTY_EXCLUSIONS: readonly string[] = [];
-
-const normalizeSearchText = (value: string): string =>
-  value
-    .toLowerCase()
-    .replace(/[,\s]+/g, " ")
-    .trim();
 
 export const DestinationSearch = ({
   onSelect,

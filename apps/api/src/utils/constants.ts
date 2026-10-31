@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { stripSearchAccents } from "./search.js";
 
 import {
   administrativeAreas,
@@ -12,7 +13,7 @@ export const parentAdminArea = alias(administrativeAreas, "parent_admin_area");
 
 export const searchableLocation = sql<string>`
   regexp_replace(
-    concat_ws(
+    ${stripSearchAccents(sql`concat_ws(
       ' ',
       ${destinations.name},
       ${parentAdminArea.name},
@@ -20,7 +21,7 @@ export const searchableLocation = sql<string>`
       ${countries.name},
       ${countries.iso2},
       ${countries.iso3}
-    ),
+    )`)},
     '[[:punct:]]+',
     ' ',
     'g'

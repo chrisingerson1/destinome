@@ -1,5 +1,9 @@
 # Destinome web
 
+Destination search ignores accents in matching and relevance, so `Belem` finds
+`Belém` and `Sao Paulo` finds `São Paulo`. Both accented and unaccented queries
+work, including local parent-name matching. Displayed names retain their accents.
+
 The destination details **Compare** button opens `/compare?destination=<slug>`
 with that destination preloaded using the existing detail query cache. Refreshes
 and shared URLs restore the source destination. The tab's last map URL is saved
@@ -91,14 +95,14 @@ they do not exercise WebGL rendering.
 When the map fails to load, or the configured provider blocks requests with an
 authorization or quota error, the globe shows **Map temporarily unavailable**
 and hides its map controls. **Continue without Satellite Imagery** in satellite
-mode (or **Continue without basemap** in OpenFreeMap mode) dismisses the alert and starts
-a minimal globe using a local background style with no remote tiles, labels,
-fonts, or sprites. The same destination pins, filters, search, and camera controls
-remain available, with a small notice that satellite imagery is unavailable.
-The current camera and discovery URL are preserved. This also works without a
-MapTiler key. If the minimal map fails, **Try again** retries the minimal map
-rather than contacting MapTiler. The fallback applies to the current map visit;
-the shared navbar remains available throughout.
+mode dismisses the alert and loads OpenFreeMap's Liberty vector map, including
+geographic labels and streets. The same globe projection, destination pins,
+filters, search, and camera controls remain available, with a small OpenFreeMap
+fallback notice. The current camera and discovery URL are preserved. This also
+works without a MapTiler key. If OpenFreeMap also fails, **Continue without basemap**
+loads the local minimal globe with no remote map resources. **Try again** after a
+minimal-map failure retries only that local style. Fallbacks never retry MapTiler
+and apply to the current map visit; the shared navbar remains available throughout.
 
 Manual smoke check with the API and web dev servers running:
 
@@ -145,8 +149,9 @@ changes keep the current map/layer. Unmount cancels pending startup and removes
 the map. Constructor failures and a 20-second initial-load timeout show the
 existing fallback prompt. Fatal provider failures dispose the map and abort
 outstanding work, including the SDK's automatic style fallback; there is no
-application retry loop. Continuing starts the existing local minimal globe
-with the saved camera. A failed minimal attempt retries only that local style.
+application retry loop. Continuing after a MapTiler failure loads OpenFreeMap
+with the saved camera. If OpenFreeMap also fails, the local minimal globe remains
+available. A failed minimal attempt retries only that local style.
 
 SDK telemetry is disabled to avoid metrics requests from fallback or removed
 maps. SDK persistent caching is also disabled: in 4.2.0 its cache protocols do
@@ -178,8 +183,9 @@ VITE_MAP_BASEMAP=minimal npm run dev --workspace=@destinome/web
 
 Unset `VITE_MAP_BASEMAP` (or use `openfreemap`) to restore the development
 default. Unknown values also select OpenFreeMap in development. Production
-builds and `vite preview` always use session-enabled MapTiler Hybrid, regardless
-of this variable. Keep `VITE_MAPTILER_KEY` configured for production builds.
+builds and `vite preview` start with session-enabled MapTiler Hybrid, regardless
+of this variable, and offer OpenFreeMap when MapTiler is unavailable. Keep
+`VITE_MAPTILER_KEY` configured for production builds.
 
 Development smoke check: open `/map` with no MapTiler key and inspect Network.
 Basemap style/source/tile/font/sprite requests should use `tiles.openfreemap.org`,
@@ -223,7 +229,8 @@ After provider access is restored:
 3. Block MapTiler requests in DevTools and reload to exercise the error prompt;
    also check a slow/unresponsive provider reaches the timeout. Continue without
    satellite imagery and repeat the pin/search/filter checks. The fallback must
-   not make MapTiler requests, including when retrying a failed minimal map.
+   load OpenFreeMap with its source attribution and make no MapTiler requests.
+   Block OpenFreeMap as well to verify the local minimal-map option and retries.
 4. In [MapTiler Cloud Analytics](https://cloud.maptiler.com/analytics/), select
    the relevant API key/date range where available. Check the **map sessions**
    usage for a small controlled visit after analytics processing. Pan/zoom

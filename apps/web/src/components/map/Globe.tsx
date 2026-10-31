@@ -23,6 +23,7 @@ import {
   getMapDestinations,
   getMapDestinationScores,
   getMapErrorMessage,
+  getFallbackBasemap,
   mapReturnStore,
   mapViewKey,
   MAP_UNAVAILABLE_MESSAGE,
@@ -119,10 +120,7 @@ export const Globe = () => {
 
   const [mapDestinations, setMapDestinations] = useState<MapDestination[]>([]);
   const [destinationsLoaded, setDestinationsLoaded] = useState(false);
-  // Zero starts with the selected provider; subsequent attempts use the local style.
-  const [minimalMapAttempt, setMinimalMapAttempt] = useState(
-    BASEMAP === "minimal" ? 1 : 0,
-  );
+  const [mapAttempt, setMapAttempt] = useState({ basemap: BASEMAP, number: 0 });
   const [mapError, setMapError] = useState<string | null>(() =>
     BASEMAP !== "maptiler" || MAPTILER_KEY ? null : MAP_UNAVAILABLE_MESSAGE,
   );
@@ -298,8 +296,8 @@ export const Globe = () => {
 
         if (!container) return;
 
-        if (BASEMAP === "maptiler" && !MAPTILER_KEY && minimalMapAttempt === 0)
-          return;
+        const basemap = mapAttempt.basemap;
+        if (basemap === "maptiler" && !MAPTILER_KEY) return;
 
         const controller = new AbortController();
 
@@ -309,17 +307,18 @@ export const Globe = () => {
         const playHomeAnimation =
           animateFromHome &&
           initialViewRef.current === null &&
-          minimalMapAttempt === 0;
+          mapAttempt.number === 0 &&
+          basemap !== "minimal";
 
         // Reuse the SDK's exact MapLibre core for free/local maps. Its base Map
         // avoids SDK metadata requests and automatic MapTiler style fallbacks.
-        const useMapTiler = BASEMAP === "maptiler" && minimalMapAttempt === 0;
+        const useMapTiler = basemap === "maptiler";
         let map: GlobeMap;
         try {
           const mapOptions = {
             container,
             style:
-              minimalMapAttempt > 0
+              basemap === "minimal"
                 ? createMinimalMapStyle()
                 : useMapTiler
                   ? MAP_STYLE
@@ -678,7 +677,8 @@ export const Globe = () => {
         }, MAP_LOAD_TIMEOUT_MS);
 
         const failMap = (message: string) => {
-          initialViewRef.current = readMapView(map);
+          initialViewRef.current =
+            !hasLoaded && playHomeAnimation ? initialView : readMapView(map);
           setMapError(message);
           // Leave the current event dispatch before disposing the SDK and GPU resources.
           // In particular, abort the SDK's automatic style fallback after quota errors.
@@ -713,7 +713,7 @@ export const Globe = () => {
         };
         return cleanup;
       }),
-    [animateFromHome, minimalMapAttempt],
+    [animateFromHome, mapAttempt],
   );
 
   // Back/Forward changes the camera without creating a new history entry.
@@ -772,14 +772,17 @@ export const Globe = () => {
   // Render
   // ---------------------------------------------------------------------------
 
-  const continueWithMinimalMap = () => {
+  const continueWithFallbackMap = () => {
     initialViewRef.current =
       mapRef.current && destinationsLoaded
         ? readMapView(mapRef.current)
         : (initialViewRef.current ?? discovery.view ?? DEFAULT_MAP_VIEW);
     setDestinationsLoaded(false);
     setMapError(null);
-    setMinimalMapAttempt((attempt) => attempt + 1);
+    setMapAttempt(({ basemap, number }) => ({
+      basemap: getFallbackBasemap(basemap),
+      number: number + 1,
+    }));
   };
 
   return (
@@ -840,13 +843,13 @@ export const Globe = () => {
             loading={scoresLoading}
             error={scoresError}
           />
-          {minimalMapAttempt > 0 && (
+          {(mapAttempt.number > 0 || mapAttempt.basemap === "minimal") && (
             <p
               role="status"
               className="pointer-events-none absolute right-5 bottom-5 max-w-[calc(100%-40px)] rounded-lg border border-slate-700/80 bg-slate-950/90 px-3 py-2 text-xs text-slate-300"
             >
-              {BASEMAP === "maptiler"
-                ? "Satellite imagery unavailable"
+              {mapAttempt.basemap === "openfreemap"
+                ? "Satellite imagery unavailable · OpenFreeMap"
                 : "Minimal basemap"}
             </p>
           )}
@@ -863,20 +866,21 @@ export const Globe = () => {
             <p role="alert" className="mt-2 text-sm text-slate-400">
               {mapError}
             </p>
-            {minimalMapAttempt === 0 && (
+            {mapAttempt.basemap !== "minimal" && (
               <p className="mt-2 text-sm text-slate-400">
-                Continue on a minimal map with destination pins and map
-                controls.
+                {mapAttempt.basemap === "maptiler"
+                  ? "Continue with OpenFreeMap's street map, destination pins, and map controls."
+                  : "Continue on a minimal map with destination pins and map controls."}
               </p>
             )}
             <button
               type="button"
-              onClick={continueWithMinimalMap}
+              onClick={continueWithFallbackMap}
               className="mt-5 min-h-11 cursor-pointer rounded-lg border border-sky-300/60 px-4 py-2 text-sm font-medium text-sky-200 transition-colors hover:bg-sky-300/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
             >
-              {minimalMapAttempt > 0
+              {mapAttempt.basemap === "minimal"
                 ? "Try again"
-                : BASEMAP === "maptiler"
+                : mapAttempt.basemap === "maptiler"
                   ? "Continue without Satellite Imagery"
                   : "Continue without basemap"}
             </button>

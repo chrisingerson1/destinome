@@ -53,6 +53,23 @@ test("destination list ordering", async (t) => {
     assert.match(queries[0].text, / where /);
   });
 
+  await t.test("search folds accents in both filtering and relevance without altering response names", async () => {
+    queries.length = 0;
+    assert.equal((await app.inject(`/destinations?search=${encodeURIComponent("BELÉM")}`)).statusCode, 200);
+    const list = queries.find(({ text }) => !text.includes("count(*)"));
+    const total = queries.find(({ text }) => text.includes("count(*)"));
+    assert.ok(list);
+    assert.ok(total);
+    for (const query of [list, total]) {
+      assert.match(query.text.split(" where ")[1], /normalize\(/);
+      assert.ok(query.values.includes("belem%"));
+    }
+    assert.match(ordering()!, /normalize\("destinations"\."name", NFD\)/);
+    assert.ok(list.values.includes("belem"));
+    assert.ok(!list.values.includes("BELÉM"));
+    assert.match(list.text.split(" from ")[0], /"destinations"\."name"/);
+  });
+
   await t.test("unsupported sorting returns 400 before querying", async () => {
     queries.length = 0;
     const response = await app.inject("/destinations?sort=invalid");

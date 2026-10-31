@@ -19,9 +19,11 @@ import {
   buildScoreCondition,
   buildSearchCondition,
   getSearchPatterns,
+  normalizeSearchText,
   parentAdminArea,
   parseScoreParams,
   splitURLParams,
+  stripSearchAccents,
 } from "../utils/index.js";
 import { InvalidScoreFilterError, type ScoreFilter } from "../utils/parseScoreParams.js";
 
@@ -65,6 +67,8 @@ export async function destinationsListRoutes(app: FastifyInstance) {
       const offset = (page - 1) * limit;
 
       const search = (request.query.search ?? "").trim();
+      const normalizedSearch = normalizeSearchText(search);
+      const searchableName = stripSearchAccents(destinations.name);
       const searchPatterns = getSearchPatterns(search);
       const searchCondition = buildSearchCondition(searchPatterns);
 
@@ -176,8 +180,8 @@ export async function destinationsListRoutes(app: FastifyInstance) {
               ? [
                   // Exact matches first, then prefix matches, then other matches.
                   sql`CASE
-                    WHEN LOWER(${destinations.name}) = LOWER(${search}) THEN 0
-                    WHEN ${destinations.name} ILIKE ${`${search}%`} THEN 1
+                    WHEN LOWER(${searchableName}) = ${normalizedSearch} THEN 0
+                    WHEN ${searchableName} ILIKE ${`${normalizedSearch}%`} THEN 1
                     ELSE 2
                   END`,
 
