@@ -3,6 +3,8 @@ import { normalizeSearchText } from "../lib/search";
 
 import {
   searchDestinations,
+  searchDestinationsPage,
+  type DestinationSearchPage,
   type DestinationSearchResult,
 } from "../lib/destinations";
 
@@ -38,6 +40,12 @@ export const DestinationSearch = ({
   const resultsId = `${inputId}-results`;
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activeRequestRef = useRef<{
+    controller: AbortController;
+    ready: boolean;
+    loadingMore: boolean;
+  } | null>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DestinationSearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +53,12 @@ export const DestinationSearch = ({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [hasError, setHasError] = useState(false);
   const [retryVersion, setRetryVersion] = useState(0);
+  const [pagination, setPagination] = useState<{
+    search: string;
+    nextPage: number | null;
+  } | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
   const search = query.trim();
   const canSearch =
     search.length >= 2 || (showSuggestionsOnFocus && search.length === 0);
@@ -62,9 +76,13 @@ export const DestinationSearch = ({
     if (!isOpen || !canSearch) return;
 
     const controller = new AbortController();
+    const request = { controller, ready: false, loadingMore: false };
+    activeRequestRef.current = request;
 
     const timeout = setTimeout(async () => {
       setIsLoading(true);
+      setIsLoadingMore(false);
+      setMoreError(false);
       try {
         const normalizedQuery = normalizeSearchText(search);
         const words = normalizedQuery.split(" ");
@@ -93,9 +111,10 @@ export const DestinationSearch = ({
 
         // First try the normal search, unless the complete
         // parent name was explicitly supplied.
-        let destinations: DestinationSearchResult[] = hasExactParent
-          ? []
-          : await searchDestinations(search, controller.signal);
+        let page: DestinationSearchPage | undefined;
+        if (!hasExactParent)
+          page = await searchDestinationsPage(search, 1, controller.signal);
+        let destinations = page?.data ?? [];
 
         // If necessary, search for the child destination and
         // filter by its parent, accepting partial parent names.
@@ -113,16 +132,34 @@ export const DestinationSearch = ({
 
           if (contextualMatches.length > 0) {
             destinations = contextualMatches;
+            page = undefined;
           } else if (hasExactParent) {
             // Preserve ordinary searches when an apparent
             // parent match doesn't actually resolve.
-            destinations = await searchDestinations(search, controller.signal);
+            page = await searchDestinationsPage(search, 1, controller.signal);
+            destinations = page.data;
           }
         }
 
         if (controller.signal.aborted) return;
 
-        setResults(destinations.filter(({ slug }) => slug !== excludeSlug && !excludeSlugs.includes(slug)));
+        setResults(
+          destinations.filter(
+            ({ slug }) => slug !== excludeSlug && !excludeSlugs.includes(slug),
+          ),
+        );
+        setPagination(
+          page
+            ? {
+                search,
+                nextPage:
+                  page.pagination.page < page.pagination.totalPages
+                    ? page.pagination.page + 1
+                    : null,
+              }
+            : null,
+        );
+        request.ready = true;
         setHasError(false);
         setActiveIndex(-1);
       } catch (error) {
@@ -141,6 +178,8 @@ export const DestinationSearch = ({
     return () => {
       clearTimeout(timeout);
       controller.abort();
+      if (activeRequestRef.current?.controller === controller)
+        activeRequestRef.current = null;
     };
   }, [
     query,
@@ -153,6 +192,56 @@ export const DestinationSearch = ({
     excludeSlugs,
     retryVersion,
   ]);
+
+  const loadMore = async () => {
+    const request = activeRequestRef.current;
+    if (
+      !request?.ready ||
+      request.controller.signal.aborted ||
+      request.loadingMore ||
+      pagination?.search !== search ||
+      !pagination.nextPage
+    )
+      return;
+    request.loadingMore = true;
+    setIsLoadingMore(true);
+    setMoreError(false);
+    try {
+      const page = await searchDestinationsPage(
+        search,
+        pagination.nextPage,
+        request.controller.signal,
+      );
+      if (request.controller.signal.aborted) return;
+      setResults((current) => {
+        const combined = new Map(
+          current.map((destination) => [destination.id, destination]),
+        );
+        for (const destination of page.data) {
+          if (
+            destination.slug !== excludeSlug &&
+            !excludeSlugs.includes(destination.slug)
+          ) {
+            combined.set(destination.id, destination);
+          }
+        }
+        return [...combined.values()];
+      });
+      setPagination({
+        search,
+        nextPage:
+          page.pagination.page < page.pagination.totalPages
+            ? page.pagination.page + 1
+            : null,
+      });
+      if (document.activeElement === moreButtonRef.current) inputRef.current?.focus();
+    } catch {
+      if (!request.controller.signal.aborted) setMoreError(true);
+    } finally {
+      request.loadingMore = false;
+      if (!request.controller.signal.aborted) setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -178,6 +267,9 @@ export const DestinationSearch = ({
     setHasError(false);
     setIsLoading(canSearch);
     setActiveIndex(-1);
+    setPagination(null);
+    setIsLoadingMore(false);
+    setMoreError(false);
   };
 
   const handleSelect = (destination: DestinationSearchResult) => {
@@ -318,97 +410,129 @@ export const DestinationSearch = ({
         </div>
       </div>
       {dropdownOpen && (
-        <div
-          id={resultsId}
-          role="listbox"
-          aria-label="Destination suggestions"
-          className="absolute top-full left-0 z-30 mt-1 max-h-80 w-full overflow-y-auto overscroll-contain rounded-xl border border-white/15 bg-slate-950 text-white shadow-xl"
-        >
-          {!canSearch && (
-            <p className="px-4 py-3 text-sm text-slate-400">
-              Type at least two characters to search.
-            </p>
-          )}
-          {canSearch && isLoading && (
-            <p role="status" className="px-4 py-3 text-sm text-slate-400">
-              Searching...
-            </p>
-          )}
-
-          {canSearch && !isLoading && hasError && (
-            <div className="px-4 py-3 text-sm">
-              <p role="alert" className="text-slate-400">
-                Unable to search destinations.
+        <div className="absolute top-full left-0 z-30 mt-1 flex max-h-80 w-full flex-col overflow-hidden rounded-xl border border-white/15 bg-slate-950 text-white shadow-xl">
+          <div
+            id={resultsId}
+            role="listbox"
+            aria-label="Destination suggestions"
+            className="destinome-search-results min-h-0 overflow-y-auto overscroll-contain"
+          >
+            {!canSearch && (
+              <p className="px-4 py-3 text-sm text-slate-400">
+                Type at least two characters to search.
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setHasError(false);
-                  setIsLoading(true);
-                  setRetryVersion((version) => version + 1);
-                }}
-                className="mt-2 min-h-9 cursor-pointer text-sky-300 hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
-              >
-                Try again
-              </button>
-            </div>
-          )}
-          {canSearch && !isLoading && !hasError && results.length === 0 && (
-            <p role="status" className="px-4 py-3 text-sm text-slate-400">
-              No destinations found.
-            </p>
-          )}
+            )}
+            {canSearch && isLoading && (
+              <p role="status" className="px-4 py-3 text-sm text-slate-400">
+                Searching...
+              </p>
+            )}
 
+            {canSearch && !isLoading && hasError && (
+              <div className="px-4 py-3 text-sm">
+                <p role="alert" className="text-slate-400">
+                  Unable to search destinations.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasError(false);
+                    setIsLoading(true);
+                    setRetryVersion((version) => version + 1);
+                  }}
+                  className="mt-2 min-h-9 cursor-pointer text-sky-300 hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+            {canSearch && !isLoading && !hasError && results.length === 0 && (
+              <p role="status" className="px-4 py-3 text-sm text-slate-400">
+                No destinations found.
+              </p>
+            )}
+
+            {canSearch &&
+              !isLoading &&
+              !hasError &&
+              results.map((destination, index) => {
+                const score = scoresBySlug.get(destination.slug);
+                const parentName =
+                  parentNamesBySlug.get(destination.slug) ??
+                  destination.parentDestination?.name;
+
+                return (
+                  <button
+                    key={destination.id}
+                    id={`${resultsId}-${index}`}
+                    type="button"
+                    role="option"
+                    tabIndex={-1}
+                    aria-selected={index === activeIndex}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleSelect(destination)}
+                    className={`flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition-colors ${
+                      index === activeIndex
+                        ? "bg-white/15"
+                        : "hover:bg-white/10"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {destination.name}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">
+                        {[
+                          ...new Set(
+                            [
+                              parentName,
+                              destination.adminArea,
+                              destination.country.name,
+                            ].filter(Boolean),
+                          ),
+                        ].join(" · ")}
+                      </p>
+                    </div>
+
+                    {typeof score === "number" && (
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-200">
+                        {score.toFixed(2)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+          </div>
           {canSearch &&
             !isLoading &&
             !hasError &&
-            results.map((destination, index) => {
-              const score = scoresBySlug.get(destination.slug);
-              const parentName =
-                parentNamesBySlug.get(destination.slug) ??
-                destination.parentDestination?.name;
-
-              return (
+            pagination?.search === search &&
+            pagination.nextPage && (
+              <div className="shrink-0 border-t border-white/10 px-4 py-2">
+                {moreError && (
+                  <p role="alert" className="mb-1 text-xs text-slate-400">
+                    Unable to load more destinations.
+                  </p>
+                )}
                 <button
-                  key={destination.id}
-                  id={`${resultsId}-${index}`}
+                  ref={moreButtonRef}
                   type="button"
-                  role="option"
-                  tabIndex={-1}
-                  aria-selected={index === activeIndex}
-                  onMouseEnter={() => setActiveIndex(index)}
+                  disabled={isLoadingMore}
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => handleSelect(destination)}
-                  className={`flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3 text-left transition-colors ${
-                    index === activeIndex ? "bg-white/15" : "hover:bg-white/10"
-                  }`}
+                  onClick={() => {
+                    void loadMore();
+                  }}
+                  className="min-h-9 w-full cursor-pointer rounded-sm text-sm text-sky-300 hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-wait disabled:opacity-50"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {destination.name}
-                    </p>
-                    <p className="truncate text-xs text-slate-400">
-                      {parentName && (
-                        <>
-                          <span className="text-slate-300">{parentName}</span>
-                          <span className="mx-1 text-slate-500">·</span>
-                        </>
-                      )}
-                      {destination.country.name}
-                      {!parentName &&
-                        destination.adminArea &&
-                        ` · ${destination.adminArea}`}
-                    </p>
-                  </div>
-
-                  {typeof score === "number" && (
-                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-200">
-                      {score.toFixed(2)}
-                    </span>
-                  )}
+                  {isLoadingMore
+                    ? "Loading more…"
+                    : moreError
+                      ? "Try loading more again"
+                      : "Show more destinations"}
                 </button>
-              );
-            })}
+              </div>
+            )}
         </div>
       )}
     </div>

@@ -70,6 +70,39 @@ test("destination list ordering", async (t) => {
     assert.match(list.text.split(" from ")[0], /"destinations"\."name"/);
   });
 
+  await t.test("administrative-area names match independently of town names in results and totals", async () => {
+    for (const search of ["Massachusetts", "Massa", "Suffolk", "Île-de-France"]) {
+      queries.length = 0;
+      const response = await app.inject(`/destinations?${new URLSearchParams({ search })}`);
+      assert.equal(response.statusCode, 200);
+      assert.equal(queries.length, 2);
+      for (const { text, values } of queries) {
+        const where = text.split(" where ")[1];
+        assert.match(where, /normalize\("admin_area"\."name", NFD\), \$\d+, '', 'g'\) ILIKE/);
+        assert.match(where, /normalize\("parent_admin_area"\."name", NFD\), \$\d+, '', 'g'\) ILIKE/);
+        const pattern = search === "Île-de-France" ? "ile%de%france%" : `${search.toLowerCase()}%`;
+        assert.ok(values.filter((value) => value === pattern).length >= 3);
+      }
+    }
+  });
+
+  await t.test("country names and ISO codes match independently in results and totals", async () => {
+    for (const search of ["Portugal", "Port", "Côte d'Ivoire", "US", "USA"]) {
+      queries.length = 0;
+      const response = await app.inject(`/destinations?${new URLSearchParams({ search })}`);
+      assert.equal(response.statusCode, 200);
+      assert.equal(queries.length, 2);
+      for (const { text, values } of queries) {
+        const where = text.split(" where ")[1];
+        assert.match(where, /normalize\("countries"\."name", NFD\), \$\d+, '', 'g'\) ILIKE/);
+        assert.match(where, /"countries"\."iso2" ILIKE/);
+        assert.match(where, /"countries"\."iso3" ILIKE/);
+        const pattern = search === "Côte d'Ivoire" ? "cote%d%ivoire%" : `${search.toLowerCase()}%`;
+        assert.ok(values.includes(pattern));
+      }
+    }
+  });
+
   await t.test("unsupported sorting returns 400 before querying", async () => {
     queries.length = 0;
     const response = await app.inject("/destinations?sort=invalid");

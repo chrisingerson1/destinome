@@ -1,11 +1,13 @@
-import { and, eq, gte, inArray, or, sql } from "drizzle-orm";
+import { and, inArray, or, sql } from "drizzle-orm";
 
-import { searchableLocation } from "./constants.js";
+import { adminArea, parentAdminArea, searchableLocation } from "./constants.js";
+import { stripSearchAccents } from "./search.js";
 import type { ScoreFilter } from "./parseScoreParams.js";
 
 import {
   climateClassifications,
   continents,
+  countries,
   destinations,
   destinationsContinents,
   destinationTagScores,
@@ -71,8 +73,15 @@ export function buildScoreCondition(filters: ScoreFilter[]) {
 export function buildSearchCondition(patterns: string[]) {
   return patterns.length > 0
     ? or(
-        ...patterns.map(
-          (pattern) => sql`${searchableLocation} ILIKE ${pattern}`,
+        ...patterns.map((pattern) =>
+          or(
+            sql`${searchableLocation} ILIKE ${pattern}`,
+            sql`${stripSearchAccents(adminArea.name)} ILIKE ${pattern}`,
+            sql`${stripSearchAccents(parentAdminArea.name)} ILIKE ${pattern}`,
+            sql`${stripSearchAccents(countries.name)} ILIKE ${pattern}`,
+            sql`${countries.iso2} ILIKE ${pattern}`,
+            sql`${countries.iso3} ILIKE ${pattern}`,
+          ),
         ),
       )
     : undefined;

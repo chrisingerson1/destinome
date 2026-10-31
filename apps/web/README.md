@@ -3,6 +3,16 @@
 Destination search ignores accents in matching and relevance, so `Belem` finds
 `Belém` and `Sao Paulo` finds `São Paulo`. Both accented and unaccented queries
 work, including local parent-name matching. Displayed names retain their accents.
+Administrative-area names can be searched directly: `Massachusetts` matches
+destinations assigned to Massachusetts either directly or through their county.
+Partial area names work as well. Use **Show more destinations** in the scrollable
+search dropdown to reach every matching destination in the existing dataset;
+results load eight at a time. Later-page failures can be retried while keeping
+the results already loaded. Search rows include the state/region with their
+parent destination and country.
+Country names and ISO codes are searchable as well: `Portugal`, partial names
+such as `Port`, and codes such as `US` or `USA` return matching destinations.
+Country matching ignores accents and uses the same paginated results dropdown.
 
 The destination details **Compare** button opens `/compare?destination=<slug>`
 with that destination preloaded using the existing detail query cache. Refreshes

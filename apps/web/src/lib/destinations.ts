@@ -65,13 +65,35 @@ export const searchDestinations = async (
   search: string,
   signal?: AbortSignal,
 ): Promise<DestinationSearchResult[]> => {
-  const params = new URLSearchParams({ search, limit: "8" });
+  const result = await searchDestinationsPage(search, 1, signal);
+  return result.data;
+};
+
+export type DestinationSearchPage = {
+  data: DestinationSearchResult[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export const searchDestinationsPage = async (
+  search: string,
+  page: number,
+  signal?: AbortSignal,
+): Promise<DestinationSearchPage> => {
+  const params = new URLSearchParams({
+    search,
+    page: String(page),
+    limit: "8",
+  });
 
   const response = await fetch(`/api/destinations?${params}`, { signal });
   if (!response.ok) {
     throw new Error("Unable to search destinations");
   }
 
-  const result: { data: DestinationSearchResult[] } = await response.json();
-  return result.data;
+  return response.json();
 };
