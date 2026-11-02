@@ -15,44 +15,51 @@ export function updatePrimaryDestination(params: URLSearchParams, slug: string):
   const candidate = slug.trim();
   if (!candidate) return next;
   next.set("destination", candidate);
-  if (next.get("with")?.trim() === candidate) next.delete("with");
-  if (next.get("third")?.trim() === candidate) next.delete("third");
+  return writeAdditionalDestinations(next, getAdditionalDestinationSlugs(next));
+}
+
+export function getAdditionalDestinationSlugs(params: URLSearchParams): string[] {
+  const primary = params.get("destination")?.trim();
+  if (!primary) return [];
+  return [...new Set(params.getAll("with")
+    .flatMap((value) => value.split(","))
+    .map((slug) => slug.trim())
+    .filter((slug) => slug && slug !== primary))].slice(0, 2);
+}
+
+function writeAdditionalDestinations(params: URLSearchParams, slugs: readonly string[]): URLSearchParams {
+  const next = new URLSearchParams(params);
+  next.delete("third");
+  if (slugs.length) next.set("with", slugs.join(","));
+  else next.delete("with");
   return next;
+}
+
+export function updateAdditionalDestination(params: URLSearchParams, index: 0 | 1, slug: string | null): URLSearchParams {
+  const slugs = getAdditionalDestinationSlugs(params);
+  const candidate = slug?.trim();
+  const primary = params.get("destination")?.trim();
+  if (!candidate) slugs.splice(index, 1);
+  else if (primary && candidate !== primary && !slugs.some((value, position) => position !== index && value === candidate)) {
+    slugs.splice(index, 1, candidate);
+  }
+  return writeAdditionalDestinations(params, slugs);
 }
 
 export function getSecondaryDestinationSlug(params: URLSearchParams): string | undefined {
-  const primary = params.get("destination")?.trim();
-  const secondary = params.get("with")?.trim();
-  return primary && secondary && primary !== secondary ? secondary : undefined;
+  return getAdditionalDestinationSlugs(params)[0];
 }
 
 export function updateSecondaryDestination(params: URLSearchParams, slug: string | null): URLSearchParams {
-  const next = new URLSearchParams(params);
-  const candidate = slug?.trim();
-  const primary = next.get("destination")?.trim();
-  if (!candidate) next.delete("with");
-  else if (primary && candidate !== primary && candidate !== getThirdDestinationSlug(params)) {
-    next.set("with", candidate);
-  }
-  return next;
+  return updateAdditionalDestination(params, 0, slug);
 }
 
 export function getThirdDestinationSlug(params: URLSearchParams): string | undefined {
-  const primary = params.get("destination")?.trim();
-  const third = params.get("third")?.trim();
-  return primary && third && third !== primary && third !== getSecondaryDestinationSlug(params)
-    ? third : undefined;
+  return getAdditionalDestinationSlugs(params)[1];
 }
 
 export function updateThirdDestination(params: URLSearchParams, slug: string | null): URLSearchParams {
-  const next = new URLSearchParams(params);
-  const candidate = slug?.trim();
-  const primary = next.get("destination")?.trim();
-  if (!candidate) next.delete("third");
-  else if (primary && candidate !== primary && candidate !== getSecondaryDestinationSlug(next)) {
-    next.set("third", candidate);
-  }
-  return next;
+  return updateAdditionalDestination(params, 1, slug);
 }
 
 export function getComparisonCategories(params: URLSearchParams): string[] {

@@ -8,8 +8,7 @@ import {
   getComparisonCategories,
   getComparisonCategoryOptions,
   getDestination,
-  getSecondaryDestinationSlug,
-  getThirdDestinationSlug,
+  getAdditionalDestinationSlugs,
   updateComparisonCategories,
   updatePrimaryDestination,
   updateSecondaryDestination,
@@ -30,11 +29,10 @@ export const ComparePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const slug = params.get("destination")?.trim() || undefined;
-  const secondarySlug = getSecondaryDestinationSlug(params);
-  const thirdSlug = getThirdDestinationSlug(params);
+  const [secondarySlug, thirdSlug] = getAdditionalDestinationSlugs(params);
   const [openThirdFor, setOpenThirdFor] = useState<string | null>(null);
   const thirdTabRef = useRef<HTMLButtonElement>(null);
-  const showThirdColumn = Boolean(thirdSlug) || (Boolean(slug) && openThirdFor === slug);
+  const showThirdColumn = Boolean(thirdSlug) || (Boolean(secondarySlug) && openThirdFor === slug);
   const desktopColumns = showThirdColumn
     ? "lg:grid-cols-[minmax(140px,0.6fr)_repeat(3,minmax(0,1fr))]"
     : "lg:grid-cols-[minmax(140px,0.6fr)_repeat(2,minmax(0,1fr))]";
@@ -117,6 +115,10 @@ export const ComparePage = () => {
   }, [destination]);
 
   const selectSecondary = (selectedSlug: string | null) => {
+    if (selectedSlug === null) {
+      setOpenThirdFor(null);
+      if (thirdSlug) thirdTabRef.current?.focus();
+    }
     if (selectedSlug === secondarySlug) return;
     void navigate(
       {
@@ -142,8 +144,8 @@ export const ComparePage = () => {
   };
 
   const selectThird = (selectedSlug: string | null) => {
+    setOpenThirdFor(null);
     if (selectedSlug === null) {
-      setOpenThirdFor(null);
       thirdTabRef.current?.focus();
     }
     if (selectedSlug === thirdSlug) return;

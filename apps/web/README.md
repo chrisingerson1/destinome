@@ -37,10 +37,13 @@ Focus a field or open its dropdown for suggestions, then type to search.
 **Change** is available in every selected destination column, including the first.
 It opens the same search picker, excluding the other selected cities. **Cancel**
 keeps the current selection. Changing the first city preserves the other cities,
-selected categories, and an open third column. **Remove** clears an optional column.
-All three
-selections survive refreshes, shared links, and Back/Forward using
-`/compare?destination=lisbon&with=porto&third=paris`. Existing two-city URLs work.
+selected categories, and an open third column. Additional destinations are an
+ordered, comma-separated `with` list, with up to two unique slugs. Removing a
+destination compacts the list: removing Porto from `with=porto,paris` moves Paris
+to the second column and returns to a two-column layout. Removing the final
+additional destination removes `with` from the URL. All selections survive
+refreshes, shared links, and Back/Forward using
+`/compare?destination=lisbon&with=porto,paris`. There is no `third` URL parameter.
 The destination headers and score rows resize together when the third column is
 opened or closed. Smaller screens use labeled score cells. Loading or failure in
 an optional column leaves the others usable.
@@ -49,7 +52,7 @@ destination. Each selection adds a row with each city's score and colored score 
 missing scores show **Unrated**. Remove a row with its × button. Overall stays in
 the destination headers. Categories start empty and are saved in selection order
 in a readable URL, for example
-`/compare?destination=lisbon&with=porto&third=paris&categories=food,budget`.
+`/compare?destination=lisbon&with=porto,paris&categories=food,budget`.
 Refreshes, shared links, and Back/Forward restore these rows; changing or removing
 an optional destination keeps them. Map filters do not select comparison categories,
 and weather is not added automatically.

@@ -6,6 +6,7 @@ import {
   getComparisonCategories,
   getComparisonCategoryOptions,
   getComparisonScore,
+  getAdditionalDestinationSlugs,
   getSecondaryDestinationSlug,
   getThirdDestinationSlug,
   updateComparisonCategories,
@@ -57,7 +58,7 @@ test("a comparison can start on the page, retain its first selection on refresh,
 });
 
 test("changing the first city preserves both other cities and categories through refresh and Back/Forward", async () => {
-  const original = "/compare?destination=lisbon&with=porto&third=paris&categories=food,budget&campaign=shared#comparison";
+  const original = "/compare?destination=lisbon&with=porto,paris&categories=food,budget&campaign=shared#comparison";
   const router = createMemoryRouter([{ path: "/compare" }], { initialEntries: [original] });
   const current = () => new URLSearchParams(router.state.location.search);
   try {
@@ -130,37 +131,74 @@ test("a comparison cannot select the original destination or exist without one",
   assert.equal(updateSecondaryDestination(new URLSearchParams(), "porto").has("with"), false);
 });
 
-test("third-destination parsing keeps existing two-city links and ignores duplicate or orphan selections", () => {
+test("additional destinations are an ordered array capped at two unique cities", () => {
   assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&with=porto")), undefined);
-  assert.equal(getThirdDestinationSlug(new URLSearchParams("third=paris")), undefined);
-  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&third=lisbon")), undefined);
-  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&with=porto&third=porto")), undefined);
-  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&third=%20paris%20")), "paris");
+  assert.deepEqual(getAdditionalDestinationSlugs(new URLSearchParams("with=porto,paris")), []);
+  assert.deepEqual(getAdditionalDestinationSlugs(new URLSearchParams("destination=lisbon&with=lisbon,,porto,porto,%20paris%20,madrid")), ["porto", "paris"]);
+  assert.equal(getThirdDestinationSlug(new URLSearchParams("destination=lisbon&with=porto,%20paris%20")), "paris");
+  assert.deepEqual(getAdditionalDestinationSlugs(new URLSearchParams("destination=lisbon&with=porto&with=paris")), ["porto", "paris"]);
 });
 
 test("adding, changing, and removing a third city preserves the others and selected categories", () => {
   const original = new URLSearchParams("destination=lisbon&with=porto&categories=food,budget&campaign=shared");
   const added = updateThirdDestination(original, " paris ");
   assert.equal(getThirdDestinationSlug(added), "paris");
-  assert.equal(original.has("third"), false);
+  assert.equal(added.get("with"), "porto,paris");
+  assert.equal(added.has("third"), false);
+  assert.equal(original.get("with"), "porto");
   assert.equal(added.get("destination"), "lisbon");
   assert.equal(getSecondaryDestinationSlug(added), "porto");
   assert.deepEqual(getComparisonCategories(added), ["food", "budget"]);
   assert.equal(added.get("campaign"), "shared");
   const changed = updateThirdDestination(added, "madrid");
   assert.equal(getThirdDestinationSlug(changed), "madrid");
-  assert.equal(getThirdDestinationSlug(updateSecondaryDestination(changed, null)), "madrid");
+  const compacted = updateSecondaryDestination(changed, null);
+  assert.equal(getSecondaryDestinationSlug(compacted), "madrid");
+  assert.equal(getThirdDestinationSlug(compacted), undefined);
   assert.equal(getThirdDestinationSlug(updateSecondaryDestination(changed, "berlin")), "madrid");
   assert.equal(updateThirdDestination(changed, null).toString(), original.toString());
 });
 
 test("neither optional column can duplicate a selected city, and changing the first removes duplicate entries", () => {
-  const params = new URLSearchParams("destination=lisbon&with=porto&third=paris");
+  const params = new URLSearchParams("destination=lisbon&with=porto,paris");
   assert.equal(getThirdDestinationSlug(updateThirdDestination(params, "lisbon")), "paris");
   assert.equal(getThirdDestinationSlug(updateThirdDestination(params, "porto")), "paris");
   assert.equal(getSecondaryDestinationSlug(updateSecondaryDestination(params, "paris")), "porto");
   assert.equal(getThirdDestinationSlug(updateThirdDestination(new URLSearchParams(), "paris")), undefined);
-  assert.equal(updatePrimaryDestination(params, "paris").has("third"), false);
+  assert.deepEqual(getAdditionalDestinationSlugs(updatePrimaryDestination(params, "paris")), ["porto"]);
+});
+
+test("removing the middle city compacts the list and keeps settings through Back/Forward", async () => {
+  const router = createMemoryRouter([{ path: "/compare" }], {
+    initialEntries: ["/compare?destination=lisbon&with=porto,paris&categories=food,budget&campaign=shared#scores"],
+  });
+  const current = () => new URLSearchParams(router.state.location.search);
+  try {
+    const original = current();
+    const compacted = updateSecondaryDestination(original, null);
+    await router.navigate({ search: discoverySearch(compacted), hash: router.state.location.hash });
+    assert.equal(current().get("destination"), "lisbon");
+    assert.equal(current().get("with"), "paris");
+    assert.equal(current().has("third"), false);
+    assert.deepEqual(getAdditionalDestinationSlugs(current()), ["paris"]);
+    assert.deepEqual(getComparisonCategories(current()), ["food", "budget"]);
+    assert.equal(current().get("campaign"), "shared");
+    assert.equal(router.state.location.hash, "#scores");
+    assert.equal(original.get("with"), "porto,paris");
+    await router.navigate(-1);
+    assert.deepEqual(getAdditionalDestinationSlugs(current()), ["porto", "paris"]);
+    await router.navigate(1);
+    assert.deepEqual(getAdditionalDestinationSlugs(current()), ["paris"]);
+    await router.navigate({ search: discoverySearch(updateSecondaryDestination(current(), null)) });
+    assert.equal(current().has("with"), false);
+    assert.deepEqual(getAdditionalDestinationSlugs(current()), []);
+  } finally { router.dispose(); }
+});
+
+test("with arrays keep readable commas while preserving encoded query delimiters", () => {
+  const params = new URLSearchParams({ destination: "lisbon", with: "porto,paris", campaign: "a,b&with=other" });
+  assert.equal(discoverySearch(params), "?destination=lisbon&with=porto,paris&campaign=a%2Cb%26with%3Dother");
+  assert.deepEqual([...new URLSearchParams(discoverySearch(params))], [...params]);
 });
 
 test("shared URLs and Back/Forward restore all three cities and the selected score rows", async () => {
@@ -174,6 +212,8 @@ test("shared URLs and Back/Forward restore all three cities and the selected sco
     assert.equal(shared.searchParams.get("destination"), "lisbon");
     assert.equal(getSecondaryDestinationSlug(shared.searchParams), "porto");
     assert.equal(getThirdDestinationSlug(shared.searchParams), "paris");
+    assert.equal(shared.searchParams.get("with"), "porto,paris");
+    assert.equal(shared.searchParams.has("third"), false);
     assert.deepEqual(getComparisonCategories(shared.searchParams), ["food", "budget"]);
     await router.navigate({ search: discoverySearch(updateThirdDestination(current(), null)) });
     await router.navigate(-1);
