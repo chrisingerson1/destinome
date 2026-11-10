@@ -7,8 +7,7 @@
   "routes": [
     {
       "src": "^/$",
-      "status": 307,
-      "headers": { "Location": "https://www.foratravel.com/advisor/chris-ingerson" }
+      "dest": "/destinome/portfolio.html"
     },
     {
       "src": "^/destinome$",

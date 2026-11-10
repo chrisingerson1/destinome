@@ -171,9 +171,15 @@ vercel deploy --prod --project prj_pDJCMsnJ255inuJhjVFH0iKOGKZD --scope destinom
 The frontend installs from the root lockfile. During Vercel builds only,
 Vite places output under `dist/destinome/` so all public assets share the app's
 mount point. Regular local development and builds retain their previous paths.
-The hosting routes redirect exactly `/` to Fora, normalize `/destinome` to
+The hosting routes serve the portfolio landing page at `/`, normalize `/destinome` to
 `/destinome/`, serve existing files, and return the SPA entry point for deep
 links under `/destinome/`. API requests are handled before the SPA fallback.
+The landing page is the standalone `apps/web/public/portfolio.html`, copied
+by Vite with the other public assets. It links Travel Services to Fora and
+Destinome to `/destinome`, without loading the app or making map/API requests.
+With the default local dev server, preview it at `/portfolio.html`; the
+Destinome app keeps its existing local root. With a prefixed production build,
+the landing page is also available at `/destinome/portfolio.html`.
 
 `/destinome/api/*` proxies to `https://destinome-api.vercel.app/*`. A request
 header transform inserts the production-only sensitive variable
@@ -214,7 +220,7 @@ vercel rollback https://destinome-2zsgejoqy-destinome.vercel.app --scope destino
 ```
 
 For a future root-mounted `destinome.travel` deployment, use `APP_BASE_PATH=/`,
-remove the temporary Fora and mount redirects, and adjust API/SPA route matches
+remove the portfolio root rewrite and temporary mount redirect, and adjust API/SPA route matches
 and the SPA destination to the root. Client routing and Vite assets already
 support the root mount. Changing only `APP_BASE_PATH` does not update the
 temporary domain's explicit hosting routes.

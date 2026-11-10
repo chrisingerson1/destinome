@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f3ec" />
+    <meta
+      name="description"
+      content="Meet Chris Ingerson. Explore personal travel services through Fora and Destinome, a tool for discovering and comparing destinations."
+    />
+    <title>Chris Ingerson | Travel &amp; Projects</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23254037'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='32' fill='%23f6f3ec'%3ECI%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #23372f;
+        background: #f6f3ec;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      a {
+        color: inherit;
+      }
+      a:focus-visible {
+        outline: 3px solid #367a60;
+        outline-offset: 6px;
+      }
+      .page {
+        width: min(1080px, calc(100% - 96px));
+        margin-inline: auto;
+      }
+      .skip-link {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 12px;
+        background: #fff;
+        transform: translateY(-180%);
+        z-index: 1;
+      }
+      .skip-link:focus {
+        transform: none;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding-block: 36px;
+        border-bottom: 1px solid #d5d9cd;
+      }
+      .monogram {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border: 1px solid #8e9f90;
+        border-radius: 50%;
+        font:
+          20px Georgia,
+          serif;
+        letter-spacing: -1px;
+        text-decoration: none;
+      }
+      .header-note,
+      .eyebrow,
+      .project-label {
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.6;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .header-note {
+        color: #5c6a60;
+        text-align: right;
+      }
+      .intro {
+        padding-block: 76px 66px;
+      }
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #52705b;
+        margin: 0 0 24px;
+      }
+      .eyebrow::before {
+        content: "";
+        width: 28px;
+        height: 1px;
+        background: currentColor;
+      }
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(52px, 8vw, 96px);
+        font-weight: 400;
+        line-height: 1.04;
+        letter-spacing: -0.055em;
+      }
+      .intro-copy {
+        max-width: 600px;
+        margin: 26px 0 0;
+        font-size: 19px;
+        line-height: 1.75;
+        color: #566257;
+      }
+      .projects {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-top: 1px solid #b5c0af;
+        border-bottom: 1px solid #b5c0af;
+      }
+      .project {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 36px 44px 42px 0;
+      }
+      .project + .project {
+        padding-right: 0;
+        padding-left: 44px;
+        border-left: 1px solid #d5d9cd;
+      }
+      .project-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        width: 100%;
+        margin-bottom: 24px;
+      }
+      .project-label {
+        margin: 0;
+        color: #61705f;
+      }
+      .project-number {
+        font:
+          13px Georgia,
+          serif;
+        color: #6c7c69;
+      }
+      h2 {
+        margin: 0;
+        font:
+          400 34px/1.2 Georgia,
+          "Times New Roman",
+          serif;
+        letter-spacing: -0.025em;
+      }
+      .project-copy {
+        max-width: 390px;
+        margin: 16px 0 28px;
+        font-size: 16px;
+        line-height: 1.8;
+        color: #566257;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 28px;
+        min-height: 48px;
+        margin-top: auto;
+        padding: 14px 20px;
+        border: 1px solid #254b3c;
+        border-radius: 4px;
+        background: #254b3c;
+        color: #fffdf7;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition:
+          background 0.18s,
+          border-color 0.18s;
+      }
+      .button:hover {
+        background: #173a2d;
+        border-color: #173a2d;
+      }
+      .button-secondary {
+        background: transparent;
+        border-color: #8a9b85;
+        color: #23372f;
+      }
+      .button-secondary:hover {
+        background: #e6ebdf;
+        border-color: #60785c;
+      }
+      .button svg {
+        width: 17px;
+        height: 17px;
+        flex: none;
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding-block: 28px 36px;
+        color: #61705f;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      footer p {
+        margin: 0;
+      }
+      @media (max-width: 640px) {
+        .page {
+          width: calc(100% - 40px);
+        }
+        header {
+          padding-block: 24px;
+        }
+        .header-note {
+          max-width: 165px;
+          font-size: 10px;
+        }
+        .intro {
+          padding-block: 52px 44px;
+        }
+        .intro-copy {
+          font-size: 17px;
+          line-height: 1.75;
+        }
+        .projects {
+          grid-template-columns: 1fr;
+        }
+        .project {
+          padding: 30px 0 34px;
+        }
+        .project + .project {
+          padding: 30px 0 34px;
+          border-left: 0;
+          border-top: 1px solid #d5d9cd;
+        }
+        .project-heading {
+          margin-bottom: 18px;
+        }
+        h2 {
+          font-size: 30px;
+        }
+        .project-copy {
+          margin-bottom: 24px;
+        }
+        .button {
+          width: 100%;
+        }
+        footer {
+          flex-direction: column;
+          gap: 6px;
+          padding-block: 24px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .button {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="page">
+      <header>
+        <a class="monogram" href="/" aria-label="Chris Ingerson home">CI</a>
+        <span class="header-note">Travel &amp; independent projects</span>
+      </header>
+      <main id="main">
+        <section class="intro" aria-labelledby="introduction">
+          <p class="eyebrow">Welcome to my portfolio</p>
+          <h1 id="introduction">Chris Ingerson.</h1>
+          <p class="intro-copy">
+            I'm a travel advisor and the creator of Destinome. Explore my travel
+            services, or take a look at what I'm building to help people
+            discover their next destination.
+          </p>
+        </section>
+        <section class="projects" aria-label="Explore my services and projects">
+          <article class="project">
+            <div class="project-heading">
+              <p class="project-label">Your next journey</p>
+              <span class="project-number" aria-hidden="true">01</span>
+            </div>
+            <h2>Travel Services</h2>
+            <p class="project-copy">
+              A personal approach to your next trip. Explore my travel advisory
+              services and connect with me through Fora to start planning.
+            </p>
+            <a
+              class="button"
+              href="https://www.foratravel.com/advisor/chris-ingerson"
+            >
+              Travel Services
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 18 18 6M6 6h12v12" />
+              </svg>
+            </a>
+          </article>
+          <article class="project">
+            <div class="project-heading">
+              <p class="project-label">A project to explore</p>
+              <span class="project-number" aria-hidden="true">02</span>
+            </div>
+            <h2>Destinome</h2>
+            <p class="project-copy">
+              Explore the globe and compare destinations by food, culture,
+              nature, budget, and more. Find a place that fits the way you
+              travel.
+            </p>
+            <a class="button button-secondary" href="/destinome">
+              Destinome
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M4 12h16m-6-6 6 6-6 6" />
+              </svg>
+            </a>
+          </article>
+        </section>
+      </main>
+      <footer>
+        <p>© 2026 Chris Ingerson</p>
+        <p>
+          Travel services through Fora. Destination discovery through Destinome.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

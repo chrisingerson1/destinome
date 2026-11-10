@@ -18,7 +18,9 @@ Open `/destinome/` on the preview server. Its API proxy, like the development
 proxy, expects the local API on port 3001. Production hosting must separately
 proxy `/destinome/api/*` to the API and serve the SPA entry document for frontend
 deep links, with static assets available under `/destinome/`. Those hosting
-rules and the root-domain Fora redirect are configured during deployment.
+rules and the root portfolio page are configured in `vercel.json`. The portfolio
+source is `public/portfolio.html`; preview it at `/portfolio.html` on the default
+local dev server, or `/destinome/portfolio.html` with the temporary mount.
 
 Destination search ignores accents in matching and relevance, so `Belem` finds
 `Belém` and `Sao Paulo` finds `São Paulo`. Both accented and unaccented queries
