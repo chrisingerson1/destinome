@@ -7,6 +7,50 @@ process.env.DATABASE_URL ??= "postgres://unused:unused@localhost/unused";
 const { pool } = await import("@destinome/database");
 const { destinationsListRoutes } = await import("../src/routes/destinations-list.js");
 
+test("destination search input validation", async (t) => {
+  let queryCount = 0;
+  t.mock.method(pool, "query", async (config: { text: string }) => {
+    queryCount++;
+    return { rows: config.text.includes("count(*)") ? [[0]] : [] };
+  });
+  const app = Fastify();
+  await app.register(destinationsListRoutes);
+  t.after(() => app.close());
+
+  await t.test("invalid searches return clear 400 errors without querying, even with score filters", async () => {
+    const cases = [
+      { search: "a".repeat(201), error: "Search must be at most 200 characters" },
+      { search: " ".repeat(201), error: "Search must be at most 200 characters" },
+      { search: Array(13).fill("paris").join(" "), error: "Search must contain at most 12 words" },
+      { search: "st st st st st st", error: "Search is too complex; use fewer words" },
+    ];
+    for (const { search, error } of cases) {
+      queryCount = 0;
+      const response = await app.inject(`/destinations?${new URLSearchParams({ search, scores: "food:8" })}`);
+      assert.equal(response.statusCode, 400);
+      assert.deepEqual(response.json(), { error });
+      assert.equal(queryCount, 0);
+    }
+  });
+
+  await t.test("repeated search parameters return 400 without querying", async () => {
+    queryCount = 0;
+    const response = await app.inject("/destinations?search=Paris&search=London");
+    assert.equal(response.statusCode, 400);
+    assert.deepEqual(response.json(), { error: "Search must be a single string" });
+    assert.equal(queryCount, 0);
+  });
+
+  await t.test("valid boundary searches still query successfully", async () => {
+    for (const search of ["", "a".repeat(200), Array(12).fill("paris").join(" "), "st st st st st Paris", "constructor"]) {
+      queryCount = 0;
+      const response = await app.inject(`/destinations?${new URLSearchParams({ search })}`);
+      assert.equal(response.statusCode, 200, search);
+      assert.equal(queryCount, 2);
+    }
+  });
+});
+
 test("destination list ordering", async (t) => {
   const queries: { text: string; values: unknown[] }[] = [];
   t.mock.method(pool, "query", async (config: { text: string }, values: unknown[]) => {

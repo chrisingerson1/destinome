@@ -3,6 +3,11 @@
 `GET /destinations` returns destination summaries with `data` and `pagination`.
 Existing search, pagination, continent, climate, and score filters remain supported.
 
+Search accepts a single `search` parameter, up to 200 characters and 12 words.
+Abbreviation matching (such as St/Saint, Mt/Mount, and Ft/Fort) is limited to 32
+combinations. Invalid or excessive searches return HTTP 400 with an `error`
+message before any database queries run. Empty search remains supported.
+
 For discovery, use `/destinations?sort=overall&scores=food:8,nature:7&page=1&limit=20`.
 All score minimums must be met. Scores range from 0 to 10, and missing scores do
 not meet a minimum. Invalid filters and unknown category slugs return HTTP 400.

@@ -8,6 +8,7 @@ export { adminArea, parentAdminArea, searchableLocation } from "./constants.js";
 export { parseScoreParams } from "./parseScoreParams.js";
 export {
   getSearchPatterns,
+  InvalidSearchError,
   normalizeSearchText,
   stripSearchAccents,
 } from "./search.js";

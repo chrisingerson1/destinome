@@ -19,6 +19,7 @@ import {
   buildScoreCondition,
   buildSearchCondition,
   getSearchPatterns,
+  InvalidSearchError,
   normalizeSearchText,
   parentAdminArea,
   parseScoreParams,
@@ -66,10 +67,18 @@ export async function destinationsListRoutes(app: FastifyInstance) {
 
       const offset = (page - 1) * limit;
 
-      const search = (request.query.search ?? "").trim();
+      const rawSearch = request.query.search ?? "";
+      let searchPatterns: string[];
+      try {
+        searchPatterns = getSearchPatterns(rawSearch);
+      } catch (error) {
+        if (!(error instanceof InvalidSearchError)) throw error;
+        return reply.code(StatusCodes.BAD_REQUEST).send({ error: error.message });
+      }
+
+      const search = rawSearch.trim();
       const normalizedSearch = normalizeSearchText(search);
       const searchableName = stripSearchAccents(destinations.name);
-      const searchPatterns = getSearchPatterns(search);
       const searchCondition = buildSearchCondition(searchPatterns);
 
       const continentSlugs = splitURLParams(request.query.continents);
