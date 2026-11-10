@@ -1,5 +1,25 @@
 # Destinome web
 
+The deployment mount point is configurable with `APP_BASE_PATH` when running
+Vite. Local development and ordinary builds default to `/`. For the temporary
+`chrisingerson.com/destinome` deployment, set `APP_BASE_PATH=/destinome/` in the
+hosting build environment. For the future `destinome.travel` deployment, leave
+it unset (or set `/`) and rebuild. Router links, generated assets, and API URLs
+use the same base; stored map-return URLs remain application-relative.
+
+To check the temporary mount locally:
+
+```sh
+APP_BASE_PATH=/destinome/ npm run build --workspace=@destinome/web
+APP_BASE_PATH=/destinome/ npm run preview --workspace=@destinome/web
+```
+
+Open `/destinome/` on the preview server. Its API proxy, like the development
+proxy, expects the local API on port 3001. Production hosting must separately
+proxy `/destinome/api/*` to the API and serve the SPA entry document for frontend
+deep links, with static assets available under `/destinome/`. Those hosting
+rules and the root-domain Fora redirect are configured during deployment.
+
 Destination search ignores accents in matching and relevance, so `Belem` finds
 `Belém` and `Sao Paulo` finds `São Paulo`. Both accented and unaccented queries
 work, including local parent-name matching. Displayed names retain their accents.

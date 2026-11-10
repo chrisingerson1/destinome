@@ -4,6 +4,7 @@ import type {
   MapDestination,
   MapDestinationScores,
 } from "../types";
+import { apiPath } from "./appPaths.ts";
 
 export type DestinationSearchResult = {
   id: number;
@@ -18,7 +19,7 @@ export async function getDestination(
   slug: string,
   signal?: AbortSignal,
 ): Promise<DestinationDetail> {
-  const response = await fetch(`/api/destination/${encodeURIComponent(slug)}`, {
+  const response = await fetch(apiPath(`destination/${encodeURIComponent(slug)}`), {
     signal,
   });
 
@@ -37,7 +38,7 @@ export async function getDestination(
 export const getMapDestinations = async (
   signal?: AbortSignal,
 ): Promise<MapDestination[]> => {
-  const response = await fetch(`/api/destinations/map`, {
+  const response = await fetch(apiPath("destinations/map"), {
     signal,
   });
 
@@ -52,7 +53,7 @@ export const getMapDestinations = async (
 export const getMapDestinationScores = async (
   signal?: AbortSignal,
 ): Promise<MapDestinationScores[]> => {
-  const response = await fetch(`/api/destinations/map/scores`, { signal });
+  const response = await fetch(apiPath("destinations/map/scores"), { signal });
   if (!response.ok) {
     throw new Error("Unable to load destination scores.");
   }
@@ -90,7 +91,7 @@ export const searchDestinationsPage = async (
     limit: "8",
   });
 
-  const response = await fetch(`/api/destinations?${params}`, { signal });
+  const response = await fetch(apiPath(`destinations?${params}`), { signal });
   if (!response.ok) {
     throw new Error("Unable to search destinations");
   }
