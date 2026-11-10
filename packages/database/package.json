@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "node --import tsx --test tests/*.test.ts",
     "data:check": "tsx src/scripts/check-data.ts",
     "data:generate-slugs": "tsx src/scripts/generate-slugs.ts",
@@ -16,11 +17,16 @@
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:neon": "DOTENV_CONFIG_PATH=../../.env.local drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/seed/index.ts"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "keywords": [],
   "author": "",

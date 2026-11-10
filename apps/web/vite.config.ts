@@ -9,6 +9,8 @@ export default defineConfig(() => {
 
   return {
     base,
+    // Vercel serves dist from the domain root; put deployed files at the app mount.
+    build: { outDir: process.env.VERCEL === "1" ? `dist${base}` : "dist" },
     plugins: [react(), tailwindcss()],
     server: {
       proxy: {

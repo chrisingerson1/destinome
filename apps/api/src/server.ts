@@ -1,8 +1,13 @@
 import Fastify from "fastify";
+import { attachDatabasePool } from "@vercel/functions";
 
-import { db, destinations } from "@destinome/database";
+import { db, destinations, pool } from "@destinome/database";
 
 import { routes } from "./routes/index.js";
+
+if (process.env.VERCEL === "1") {
+  attachDatabasePool(pool);
+}
 
 const app = Fastify({
   logger: true,

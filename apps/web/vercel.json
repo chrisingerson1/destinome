@@ -1,0 +1,44 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd ../.. && npm ci --include=optional --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "^/$",
+      "status": 307,
+      "headers": { "Location": "https://www.foratravel.com/advisor/chris-ingerson" }
+    },
+    {
+      "src": "^/destinome$",
+      "status": 308,
+      "headers": { "Location": "/destinome/" }
+    },
+    {
+      "src": "^/destinome/api/(.*)$",
+      "dest": "https://destinome-api.vercel.app/$1",
+      "transforms": [
+        {
+          "type": "request.headers",
+          "op": "set",
+          "target": { "key": "x-vercel-protection-bypass" },
+          "args": "${DESTINOME_API_BYPASS_SECRET}",
+          "env": ["DESTINOME_API_BYPASS_SECRET"]
+        },
+        {
+          "type": "request.headers",
+          "op": "delete",
+          "target": { "key": "cookie" }
+        },
+        {
+          "type": "request.headers",
+          "op": "delete",
+          "target": { "key": "x-vercel-set-bypass-cookie" }
+        }
+      ]
+    },
+    { "handle": "filesystem" },
+    { "src": "^/destinome/.*$", "dest": "/destinome/index.html" }
+  ]
+}
