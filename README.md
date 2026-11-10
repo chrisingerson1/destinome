@@ -62,6 +62,31 @@ its browser-visible MapTiler key. Its same-origin API proxy and scoped SPA
 routing are configured in `apps/web/vercel.json`. Keep domain forwarding
 and DNS unchanged until the remaining public-launch checks are complete.
 
+### Git release workflow
+
+Both Vercel projects are connected to the same GitHub monorepo,
+`chrisingerson1/destinome`, with `main` as their production branch:
+
+| Project | Root directory | Production branch |
+| --- | --- | --- |
+| `destinome-web` | `apps/web` | `main` |
+| `destinome-api` | `apps/api` | `main` |
+
+Both projects include files outside their root directory so npm workspace
+dependencies in `packages/` remain available. Their existing install and
+build commands are defined in each app's `vercel.json`.
+
+Production releases come from commits pushed or merged to GitHub `main`.
+Local edits and local commits alone do not update production. Use `develop`
+for ongoing development once that branch is created; merge tested changes
+to `main` when ready to release. No branch changes or commits were made as
+part of connecting Git. The first actual push will verify the Git webhook
+end to end; connecting the repositories did not change either live deployment.
+
+Non-production branches use Vercel preview deployments. Preview credentials
+are a separate setup; do not copy production database credentials into previews.
+GitHub deployment notifications are disabled independently of Vercel builds.
+
 ### API project prepared
 
 The Vercel project is `destinome/destinome-api`, rooted at `apps/api`, with
@@ -77,9 +102,10 @@ retain their existing credentials. An ignored recovery copy of the API login
 is kept in `.vercel/.env.api.production.local`; do not upload or commit it.
 Preview deployments do not have database credentials configured yet.
 
-All deployments currently require Vercel authentication. The team is on Hobby;
-arrange a commercial-use plan before the public business demo. No custom domain
-or DNS changes have been made.
+At the initial setup, both projects required Vercel authentication and the
+team used Hobby. The frontend custom domain has since been connected and is
+public at <https://chrisingerson.com/destinome/>. Check the current hosting
+plan's commercial-use terms before a business launch.
 
 ### API build and first deployment
 
@@ -88,7 +114,7 @@ The first verified deployment (November 10, 2026) is
 <https://destinome-ppw8i0ihj-destinome.vercel.app>, ID
 `dpl_CoZGAD1UJMFwihnN5MF9zTb32oHi`. This was a CLI deployment of the working
 tree, including uncommitted deployment preparation, based on commit `f7ff51a`.
-Git automatic deployments have not been connected.
+Git integration was connected afterward; see the Git release workflow above.
 
 Vercel installs from the monorepo root with `npm ci --include=optional`, then
 runs the API's `build` script to compile the shared database package. Its
@@ -129,12 +155,13 @@ This deployment made no schema or data changes.
 The frontend project is `destinome/destinome-web`, rooted at `apps/web`:
 <https://destinome-web.vercel.app/destinome/>. Its first verified deployment
 (November 10, 2026) is <https://destinome-2zsgejoqy-destinome.vercel.app/destinome/>,
-ID `dpl_LSC5nhZMgEw9SSJXSqf29dcndjWG`. Both projects require Vercel sign-in.
-Git automatic deployments remain disconnected. DNS and GoDaddy forwarding
-have not been changed.
+ID `dpl_LSC5nhZMgEw9SSJXSqf29dcndjWG`. Both projects required Vercel sign-in
+at that point. Git integration and the public custom domain were connected
+afterward.
 
-Use explicit project IDs from the repository root to avoid deploying to the
-wrong workspace; the existing local CLI link still points to the API:
+Normal production releases use Git `main`. For an explicitly authorized manual
+recovery deployment, use project IDs from the repository root to avoid deploying
+to the wrong workspace; the existing local CLI link still points to the API:
 
 ```sh
 vercel deploy --prod --project prj_ApedyZCOwrCFAbh6TKnqxntFjdVj --scope destinome

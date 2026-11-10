@@ -17,6 +17,8 @@ export const ComparisonCategoryPicker = ({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const focusSearchOnOpen = useRef(true);
   const id = useId();
   const available = categories.filter(({ slug }) => !selected.includes(slug));
   const matches = available.filter(({ name }) =>
@@ -25,20 +27,27 @@ export const ComparisonCategoryPicker = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    searchRef.current?.focus();
-    const dismiss = (event: PointerEvent) => {
+    // Touch users can choose a category without opening the software keyboard.
+    const initialFocus = focusSearchOnOpen.current ? searchRef.current : panelRef.current;
+    initialFocus?.focus({ preventScroll: true });
+    // A scroll starts with pointerdown too; only a completed outside click dismisses.
+    const dismiss = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
     };
-    document.addEventListener("pointerdown", dismiss);
-    return () => document.removeEventListener("pointerdown", dismiss);
+    document.addEventListener("click", dismiss);
+    return () => document.removeEventListener("click", dismiss);
   }, [isOpen]);
 
   return (
     <div
       ref={rootRef}
-      className="relative"
+      className="relative w-full lg:w-auto"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+        // Safari can blur to the body before clicking a button in this picker.
+        // Outside taps are handled by click; dismiss on a known focus move.
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          setIsOpen(false);
+        }
       }}
       onKeyDown={(event) => {
         if (event.key !== "Escape") return;
@@ -53,6 +62,12 @@ export const ComparisonCategoryPicker = ({
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={isOpen ? id : undefined}
+        onPointerDown={(event) => {
+          focusSearchOnOpen.current = event.pointerType === "mouse";
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") focusSearchOnOpen.current = true;
+        }}
         onClick={() => {
           setSearch("");
           setIsOpen((current) => !current);
@@ -63,10 +78,12 @@ export const ComparisonCategoryPicker = ({
       </button>
       {isOpen && (
         <div
+          ref={panelRef}
           id={id}
           role="dialog"
           aria-label="Add comparison category"
-          className="absolute top-full left-0 z-30 mt-2 w-[min(280px,calc(100vw-4rem))] rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-xl"
+          tabIndex={-1}
+          className="z-30 mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-xl lg:absolute lg:top-full lg:left-0 lg:w-[280px]"
         >
           <input
             ref={searchRef}
