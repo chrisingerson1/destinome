@@ -10,6 +10,10 @@
       "dest": "/destinome/portfolio.html"
     },
     {
+      "src": "^/portfolio/(.*)$",
+      "dest": "/destinome/portfolio/$1"
+    },
+    {
       "src": "^/destinome$",
       "status": 308,
       "headers": { "Location": "/destinome/" }

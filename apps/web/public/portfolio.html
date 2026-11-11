@@ -87,7 +87,21 @@
         text-align: right;
       }
       .intro {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(220px, 26vw, 300px);
+        align-items: center;
+        gap: 48px;
         padding-block: 76px 66px;
+      }
+      .intro-photo {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        object-position: center 25%;
+        border: 1px solid #d5d9cd;
+        border-radius: 8px;
       }
       .eyebrow {
         display: flex;
@@ -216,6 +230,15 @@
       footer p {
         margin: 0;
       }
+      @media (max-width: 760px) {
+        .intro {
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        .intro-photo {
+          max-width: 300px;
+        }
+      }
       @media (max-width: 640px) {
         .page {
           width: calc(100% - 40px);
@@ -279,13 +302,23 @@
       </header>
       <main id="main">
         <section class="intro" aria-labelledby="introduction">
-          <p class="eyebrow">Welcome to my portfolio</p>
-          <h1 id="introduction">Chris Ingerson.</h1>
-          <p class="intro-copy">
-            I'm a travel advisor and the creator of Destinome. Explore my travel
-            services, or take a look at what I'm building to help people
-            discover their next destination.
-          </p>
+          <div>
+            <p class="eyebrow">Welcome to my portfolio</p>
+            <h1 id="introduction">Chris Ingerson</h1>
+            <p class="intro-copy">
+              I'm a full stack engineer, travel advisor, and the creator of
+              Destinome. Explore my travel services, or take a look at what I'm
+              building to help people discover their next destination.
+            </p>
+          </div>
+          <img
+            class="intro-photo"
+            src="/portfolio/chris-ingerson.jpg"
+            alt="Chris Ingerson smiling in front of green foliage"
+            width="800"
+            height="907"
+            fetchpriority="high"
+          />
         </section>
         <section class="projects" aria-label="Explore my services and projects">
           <article class="project">
